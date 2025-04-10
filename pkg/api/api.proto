@@ -3,11 +3,11 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 package api;
-option go_package = ".";
+option go_package = "./api";
 
 message RegisterRequest {
   string id = 1;
-  string pass_hash = 2;
+  string pass = 2;
   string username = 3;
 }
 
@@ -24,7 +24,7 @@ message DeleteUserResponse {
 
 message LoginRequest {
   string id = 1;
-  string pass_hash = 2;
+  string pass = 2;
 }
 
 message LoginResponse {
