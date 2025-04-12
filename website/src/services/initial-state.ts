@@ -1,7 +1,9 @@
-import { ICategory } from '../types.ts';
+import { ICategory, IReceipt } from '../types.ts';
+import { faker } from '@faker-js/faker';
 
 interface IInitialState {
     categories: ICategory[];
+    receipts: IReceipt[];
 }
 export const initialState: IInitialState = {
     categories: [
@@ -110,4 +112,13 @@ export const initialState: IInitialState = {
             totalSum: 10000,
         },
     ],
+    receipts: Array.from({ length: 20 }, (_, i) => ({
+        id: faker.string.uuid(),
+        name: `Чек ${i + 1} - ${faker.commerce.productName()}`,
+        sum: parseFloat(faker.commerce.price({ min: 100, max: 10000 })),
+        date: faker.date.between({
+            from: new Date(2023, 0, 1),
+            to: new Date(),
+        }),
+    })),
 };
