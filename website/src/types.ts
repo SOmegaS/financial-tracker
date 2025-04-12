@@ -4,7 +4,7 @@ export interface ICategory {
     totalSum: number;
 }
 
-export interface IExpense {
+export interface IReceipt {
     id: string;
     name: string;
     sum: number;

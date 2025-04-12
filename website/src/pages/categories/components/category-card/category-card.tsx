@@ -3,19 +3,17 @@ import { IconReceipt, IconPlus } from '@tabler/icons-react';
 import { memo, useState } from 'react';
 import style from './category-card.module.css';
 import { AddReceiptModal } from '../../../../common-components';
+import { useNavigate } from 'react-router-dom';
 
 interface CategoryCardProps {
     name: string;
     totalAmount: number;
-    onShowReceipts?: () => void;
+    id: string;
 }
 
-function CategoryCard({
-    name,
-    totalAmount,
-    onShowReceipts = () => {},
-}: CategoryCardProps) {
+function CategoryCard({ name, totalAmount, id }: CategoryCardProps) {
     const [isOpenModal, setIsOpenModal] = useState(false);
+    const navigate = useNavigate();
 
     return (
         <>
@@ -50,7 +48,7 @@ function CategoryCard({
                         leftSection={<IconReceipt className={style.icon} />}
                         variant="light"
                         color="cyan.7"
-                        onClick={onShowReceipts}
+                        onClick={() => navigate(`/category/${id}`)}
                     >
                         Показать все чеки
                     </Button>

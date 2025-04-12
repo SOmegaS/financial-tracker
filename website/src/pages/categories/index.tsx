@@ -28,6 +28,7 @@ export const CategoriesPage = () => {
                             span={{ base: 12, sm: 6, md: 6, lg: 4 }}
                         >
                             <CategoryCard
+                                id={category.id}
                                 name={category.name}
                                 totalAmount={category.totalSum}
                             />
