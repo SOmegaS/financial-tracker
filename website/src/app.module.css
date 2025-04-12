@@ -1,0 +1,23 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    justify-items: center;
+    justify-content: center;
+    align-items: stretch;
+    margin: 0 auto;
+    width: 80%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.navLink {
+    text-decoration: none;
+    color: var(--mantine-color-gray-7);
+    font-weight: 500;
+    font-size: var(--mantine-font-size-sm);
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--mantine-color-blue-6);
+    }
+}
