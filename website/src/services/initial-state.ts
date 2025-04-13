@@ -4,8 +4,10 @@ import { faker } from '@faker-js/faker';
 interface IInitialState {
     categories: ICategory[];
     receipts: IReceipt[];
+    isLogin: boolean;
 }
 export const initialState: IInitialState = {
+    isLogin: true,
     categories: [
         {
             id: '1',
