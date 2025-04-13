@@ -1,4 +1,16 @@
 services:
+  traefik:
+    image: traefik:v3.3
+    command: --api.insecure=true --providers.docker
+    networks:
+      - backend
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
   kafka-moscow:
     container_name: kafka-moscow
     image: confluentinc/cp-kafka:latest
@@ -24,6 +36,20 @@ services:
     networks:
       - backend
 
+  postgres-users:
+    image: postgres:latest
+    container_name: postgres-users
+    hostname: postgres-users
+    environment:
+      POSTGRES_USER: ivang
+      POSTGRES_PASSWORD: ivang
+      POSTGRES_DB: "db"
+      PGPORT: 5432
+    ports:
+      - "5434:5432"
+    networks:
+      - backend
+
   postgres-db-primary:
     image: postgres:latest
     container_name: postgres-db-primary
@@ -43,7 +69,7 @@ services:
       -c max_replication_slots=10 
       -c hot_standby_feedback=on
     volumes:
-      - ./00_init.sql:/docker-entrypoint-initdb.d/00_init.sql
+      - ./sql/init-primary.sql:/docker-entrypoint-initdb.d/init-primary.sql
     ports:
       - "5432:5432"
     networks:
@@ -82,7 +108,28 @@ services:
     ports:
       - "7777:7777"
     build: ./expensepublisher/.
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.expense-publisher.rule=Header(`target`, `expense-publisher`)
+      - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
+      - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
+      - traefik.http.routers.expense-publisher.entrypoints=http
 
+  user-service:
+    hostname: expense-publisher
+    container_name: expense-publisher
+    networks:
+      - backend
+    ports:
+      - "7778:7778"
+    build: ./expensepublisher/.
+    labels:
+      - traefik.http.routers.expense-publisher.middlewares=test-auth
+      - traefik.enable=true
+      - traefik.http.routers.expense-publisher.rule=Header(`target`, `user-service`)
+      - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
+      - traefik.http.services.expense-publisher.loadbalancer.server.port=7778
+      - traefik.http.routers.expense-publisher.entrypoints=http
 
   expense-writer:
     hostname: expense-writer

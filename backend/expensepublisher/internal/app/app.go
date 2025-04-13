@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"errors"
-	api2 "expensepublisher/pkg/api"
+	"expensepublisher/pkg/api"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -17,7 +17,7 @@ import (
 )
 
 type App struct {
-	api2.UnimplementedApiServer
+	api.UnimplementedApiServer
 	writer *kafka.Writer
 }
 
@@ -31,7 +31,7 @@ func NewApp() (*App, error) {
 	return &App{writer: w}, nil
 }
 
-func validateCreateBillMessage(msg *api2.CreateBillMessage) error {
+func validateCreateBillMessage(msg *api.CreateBillMessage) error {
 	if strings.TrimSpace(msg.Name) == "" {
 		return errors.New("name is required")
 	}
@@ -56,7 +56,7 @@ func validateCreateBillMessage(msg *api2.CreateBillMessage) error {
 	return nil
 }
 
-func (a *App) CreateBill(ctx context.Context, msg *api2.CreateBillMessage) (*emptypb.Empty, error) {
+func (a *App) CreateBill(ctx context.Context, msg *api.CreateBillMessage) (*emptypb.Empty, error) {
 	log.Println("Принят rpc вызов")
 
 	if err := validateCreateBillMessage(msg); err != nil {
@@ -69,7 +69,7 @@ func (a *App) CreateBill(ctx context.Context, msg *api2.CreateBillMessage) (*emp
 	return &emptypb.Empty{}, nil
 }
 
-func (a *App) CreateBillPublisher(ctx context.Context, msg *api2.CreateBillMessage) error {
+func (a *App) CreateBillPublisher(ctx context.Context, msg *api.CreateBillMessage) error {
 	bytes, err := proto.Marshal(msg)
 	if err != nil {
 		return err
