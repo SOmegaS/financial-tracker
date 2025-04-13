@@ -1,0 +1,99 @@
+services:
+  kafka-moscow:
+    container_name: kafka-moscow
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_KRAFT_MODE: "true"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_PROCESS_ROLES: controller,broker  # Kafka acts as both broker and controller.
+      KAFKA_NODE_ID: 1  # A unique ID for this Kafka instance.
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-moscow:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data  # Where Kafka stores its logs.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # Kafka will automatically create topics if needed.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Since we’re running one broker, one replica is enough.
+      KAFKA_LOG_RETENTION_HOURS: 168  # Keep logs for 7 days.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # No delay for consumer rebalancing.
+      CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"  # A unique ID for the Kafka cluster.
+    networks:
+      - backend
+
+  postgres-db-primary:
+    image: postgres:latest
+    container_name: postgres-db-primary
+    environment:
+      POSTGRES_USER: ivang
+      POSTGRES_PASSWORD: ivang
+      POSTGRES_DB: "db"
+      PGPORT: 5432
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256\nhost replication all 0.0.0.0/0 md5"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    command: |
+      postgres 
+      -c wal_level=replica 
+      -c hot_standby=on 
+      -c max_wal_senders=10 
+      -c max_replication_slots=10 
+      -c hot_standby_feedback=on
+    volumes:
+      - ./00_init.sql:/docker-entrypoint-initdb.d/00_init.sql
+    ports:
+      - "5432:5432"
+  postgres-db-replica:
+    image: postgres:latest
+    container_name: postgres-db-replica
+    environment:
+      PGUSER: replicator
+      PGPASSWORD: replicator_password
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data/
+    command: |
+      bash -c "
+      until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres-db-primary --port=5432
+      do
+      echo 'Waiting for primary to connect...'
+      sleep 1s
+      done
+      echo 'Backup done, starting replica...'
+      chmod 0700 /var/lib/postgresql/data
+      su postgres -c postgres
+      "
+    depends_on:
+      - postgres-db-primary
+    ports:
+      - "5433:5432"
+    networks:
+      - backend
+  
+  expense-writer:
+    hostname: expense-writer
+    container_name: expense-writer
+    networks:
+      - backend
+    depends_on: [ kafka-moscow, postgres-db-primary ]
+    build: ./expensewriter/.
+    ports:
+      - "8081:8080"
+    environment:
+      - MEMORY_LIMIT=-Xmx950m
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 120s
+        max_attempts: 3
+        window: 240s
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "1"
+
+
+networks:
+  backend:
+    name: backend
