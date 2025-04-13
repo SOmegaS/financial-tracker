@@ -27,6 +27,7 @@ services:
   postgres-db-primary:
     image: postgres:latest
     container_name: postgres-db-primary
+    hostname: postgres-db-primary
     environment:
       POSTGRES_USER: ivang
       POSTGRES_PASSWORD: ivang
@@ -45,6 +46,8 @@ services:
       - ./00_init.sql:/docker-entrypoint-initdb.d/00_init.sql
     ports:
       - "5432:5432"
+    networks:
+      - backend
   postgres-db-replica:
     image: postgres:latest
     container_name: postgres-db-replica
@@ -70,7 +73,17 @@ services:
       - "5433:5432"
     networks:
       - backend
-  
+
+  expense-publisher:
+    hostname: expense-publisher
+    container_name: expense-publisher
+    networks:
+      - backend
+    ports:
+      - "7777:7777"
+    build: ./expensepublisher/.
+
+
   expense-writer:
     hostname: expense-writer
     container_name: expense-writer

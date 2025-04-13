@@ -18,8 +18,11 @@ public class BillService {
     private final DSLContext dslContext;
 
     public void batchCreateBills(List<CreateBillProto.CreateBill> bills) {
+        log.info("Creating bills...");
         List<BillsRecord> records = bills.parallelStream().map(ProtoToJooqMapper::map).toList();
+        log.info(records.getFirst().toString());
         int[] res = dslContext.batchInsert(records).execute();
         log.info(Arrays.toString(res));
+        log.info("Bills are created");
     }
 }

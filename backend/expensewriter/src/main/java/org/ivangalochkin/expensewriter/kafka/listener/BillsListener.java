@@ -22,6 +22,8 @@ public class BillsListener {
     )
     public void consume(List<CreateBillProto.CreateBill> messages) {
         log.info("Received {} messages {}", messages.size(), Thread.currentThread().getName());
+        log.info(messages.getFirst().toString());
         billService.batchCreateBills(messages);
+        log.info("Обработка закончена");
     }
 }
