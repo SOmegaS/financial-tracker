@@ -120,7 +120,6 @@ func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginRespo
 	if err != nil {
 		return nil, err
 	}
-
 	if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(req.Pass)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid password: %v", err)
