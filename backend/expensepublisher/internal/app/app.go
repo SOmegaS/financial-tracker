@@ -22,23 +22,12 @@ import (
 
 type App struct {
 	api.UnimplementedApiServer
-	writer     *kafka.Writer
-	privateKey *rsa.PrivateKey
-	publicKey  *rsa.PublicKey
+	writer    *kafka.Writer
+	publicKey *rsa.PublicKey
 }
 
 func NewApp() (*App, error) {
-	privKeyData, err := os.ReadFile("../../secret/private.key")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key: %w", err)
-	}
-	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privKeyData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
-	}
-
-	// Optionally load public key (for verification elsewhere)
-	pubKeyData, err := os.ReadFile("../../secret/public.key")
+	pubKeyData, err := os.ReadFile("secret/public.key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key: %w", err)
 	}
@@ -53,9 +42,8 @@ func NewApp() (*App, error) {
 		RequiredAcks: kafka.RequireOne,
 	}
 	return &App{
-		writer:     w,
-		privateKey: privateKey,
-		publicKey:  publicKey,
+		writer:    w,
+		publicKey: publicKey,
 	}, nil
 }
 
