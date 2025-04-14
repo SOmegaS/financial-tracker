@@ -51,7 +51,7 @@ func (a *App) Init() error {
 	}
 	a.queries = database.New(a.db)
 
-	privKeyData, err := os.ReadFile("../../secret/private.key")
+	privKeyData, err := os.ReadFile("secret/private.key")
 	if err != nil {
 		return fmt.Errorf("failed to read private key: %w", err)
 	}
@@ -62,7 +62,7 @@ func (a *App) Init() error {
 	a.privateKey = privateKey
 
 	// Optionally load public key (for verification elsewhere)
-	pubKeyData, err := os.ReadFile("../../secret/public.key")
+	pubKeyData, err := os.ReadFile("secret/public.key")
 	if err != nil {
 		return fmt.Errorf("failed to read public key: %w", err)
 	}
@@ -120,6 +120,7 @@ func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginRespo
 	if err != nil {
 		return nil, err
 	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(req.Pass)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid password: %v", err)
