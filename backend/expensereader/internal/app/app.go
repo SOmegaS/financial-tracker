@@ -60,7 +60,6 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
-
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}

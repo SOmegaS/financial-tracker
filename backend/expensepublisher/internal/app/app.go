@@ -47,18 +47,12 @@ func NewApp() (*App, error) {
 	}, nil
 }
 
-func validateCreateBillMessage(msg *api.CreateBillMessage) error {
+func validateCreateBillMessage(msg *api.BillMessage) error {
 	if strings.TrimSpace(msg.Name) == "" {
 		return errors.New("name is required")
 	}
 	if strings.TrimSpace(msg.Category) == "" {
 		return errors.New("category is required")
-	}
-	if strings.TrimSpace(msg.UserId) == "" {
-		return errors.New("user_id is required")
-	}
-	if _, err := uuid.Parse(msg.UserId); err != nil {
-		return fmt.Errorf("user_id must be a valid UUID: %v", err)
 	}
 	if msg.Amount <= 0 || msg.Amount >= 1_000_000_000_000 {
 		return errors.New("amount must be greater than 0 and less than 1_000_000_000_000")
@@ -72,14 +66,20 @@ func validateCreateBillMessage(msg *api.CreateBillMessage) error {
 	return nil
 }
 
-func (a *App) CreateBill(ctx context.Context, msg *api.CreateBillMessage) (*emptypb.Empty, error) {
+func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Empty, error) {
 	log.Println("Принят rpc вызов")
 
 	token, err := jwt.Parse(msg.Jwt, func(token *jwt.Token) (interface{}, error) {
 		return a.publicKey, nil
 	})
+
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
+	}
+
+	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
 	if token.Claims.Valid() != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
@@ -89,15 +89,22 @@ func (a *App) CreateBill(ctx context.Context, msg *api.CreateBillMessage) (*empt
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)
 	}
 
-	err = a.CreateBillPublisher(ctx, msg)
+	err = a.CreateBillPublisher(ctx, id, msg)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal error: %v", err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
-func (a *App) CreateBillPublisher(ctx context.Context, msg *api.CreateBillMessage) error {
-	bytes, err := proto.Marshal(msg)
+func (a *App) CreateBillPublisher(ctx context.Context, userId uuid.UUID, msg *api.BillMessage) error {
+	writeMessage := &api.CreateBillMessage{
+		Name:      msg.Name,
+		Amount:    msg.Amount,
+		Category:  msg.Category,
+		Timestamp: msg.Timestamp,
+		UserId:    userId.String(),
+	}
+	bytes, err := proto.Marshal(writeMessage)
 	if err != nil {
 		return err
 	}

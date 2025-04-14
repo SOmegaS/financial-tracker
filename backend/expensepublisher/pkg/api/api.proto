@@ -7,15 +7,22 @@ package api;
 option go_package = "./api";
 
 
+message BillMessage {
+  string name = 1;
+  double amount = 2;
+  string category = 3;
+  google.protobuf.Timestamp timestamp = 5;
+  string jwt = 6;
+}
+
 message CreateBillMessage {
   string name = 1;
   double amount = 2;
   string category = 3;
   string user_id = 4;
   google.protobuf.Timestamp timestamp = 5;
-  string jwt = 6;
 }
 
 service Api {
-  rpc CreateBill (CreateBillMessage) returns (google.protobuf.Empty) {}
+  rpc CreateBill (BillMessage) returns (google.protobuf.Empty) {}
 }

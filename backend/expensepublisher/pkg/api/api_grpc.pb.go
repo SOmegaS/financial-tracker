@@ -27,7 +27,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApiClient interface {
-	CreateBill(ctx context.Context, in *CreateBillMessage, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	CreateBill(ctx context.Context, in *BillMessage, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type apiClient struct {
@@ -38,7 +38,7 @@ func NewApiClient(cc grpc.ClientConnInterface) ApiClient {
 	return &apiClient{cc}
 }
 
-func (c *apiClient) CreateBill(ctx context.Context, in *CreateBillMessage, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *apiClient) CreateBill(ctx context.Context, in *BillMessage, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Api_CreateBill_FullMethodName, in, out, cOpts...)
@@ -52,7 +52,7 @@ func (c *apiClient) CreateBill(ctx context.Context, in *CreateBillMessage, opts 
 // All implementations must embed UnimplementedApiServer
 // for forward compatibility.
 type ApiServer interface {
-	CreateBill(context.Context, *CreateBillMessage) (*emptypb.Empty, error)
+	CreateBill(context.Context, *BillMessage) (*emptypb.Empty, error)
 	mustEmbedUnimplementedApiServer()
 }
 
@@ -63,7 +63,7 @@ type ApiServer interface {
 // pointer dereference when methods are called.
 type UnimplementedApiServer struct{}
 
-func (UnimplementedApiServer) CreateBill(context.Context, *CreateBillMessage) (*emptypb.Empty, error) {
+func (UnimplementedApiServer) CreateBill(context.Context, *BillMessage) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBill not implemented")
 }
 func (UnimplementedApiServer) mustEmbedUnimplementedApiServer() {}
@@ -88,7 +88,7 @@ func RegisterApiServer(s grpc.ServiceRegistrar, srv ApiServer) {
 }
 
 func _Api_CreateBill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateBillMessage)
+	in := new(BillMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func _Api_CreateBill_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: Api_CreateBill_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServer).CreateBill(ctx, req.(*CreateBillMessage))
+		return srv.(ApiServer).CreateBill(ctx, req.(*BillMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
