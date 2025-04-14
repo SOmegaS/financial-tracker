@@ -26,17 +26,7 @@ type App struct {
 }
 
 func NewApp(dbName, dbUser, dbPass string) (*App, error) {
-	privKeyData, err := os.ReadFile("../../secret/private.key")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key: %w", err)
-	}
-	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privKeyData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse private key: %w", err)
-	}
-
-	// Optionally load public key (for verification elsewhere)
-	pubKeyData, err := os.ReadFile("../../secret/public.key")
+	pubKeyData, err := os.ReadFile("secret/public.key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key: %w", err)
 	}
@@ -52,9 +42,8 @@ func NewApp(dbName, dbUser, dbPass string) (*App, error) {
 	}
 	db := database.New(dbConn)
 	return &App{
-		db:         db,
-		privateKey: privateKey,
-		publicKey:  publicKey,
+		db:        db,
+		publicKey: publicKey,
 	}, nil
 }
 
@@ -68,7 +57,7 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 	if token.Claims.Valid() != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
-	r, err := a.db.GetReport(ctx, token.Claims.(jwt.MapClaims)["id"].(uuid.UUID))
+	r, err := a.db.GetReport(ctx, token.Claims.(jwt.MapClaims)["user_id"].(uuid.UUID))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get report error: %v", err)
 	}

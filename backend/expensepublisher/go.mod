@@ -3,6 +3,7 @@ module expensepublisher
 go 1.22.10
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.47
 	google.golang.org/grpc v1.65.0

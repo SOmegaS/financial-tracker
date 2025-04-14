@@ -100,17 +100,17 @@ services:
     networks:
       - backend
 
-  read-service:
-    hostname: read-service
-    container_name: read-service
+  expense-reader:
+    hostname: expense-reader
+    container_name: expense-reader
     networks:
       - backend
     ports:
       - "7779:7777"
-    build: ./readservice/.
+    build: ./expensereader/.
     labels:
       - traefik.enable=true
-      - traefik.http.routers.expense-publisher.rule=Header(`target`, `read-service`)
+      - traefik.http.routers.expense-publisher.rule=Header(`target`, `expense-reader`)
       - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
       - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
       - traefik.http.routers.expense-publisher.entrypoints=http
@@ -131,29 +131,20 @@ services:
       - traefik.http.routers.expense-publisher.entrypoints=http
 
   user-service:
-    hostname: expense-publisher
-    container_name: expense-publisher
+    hostname: user-service
+    container_name: user-service
     networks:
       - backend
     ports:
       - "7778:7777"
-    build: ./expensepublisher/.
+    build: ./userservice/.
     labels:
       - traefik.enable=true
       - traefik.http.routers.expense-publisher.rule=Header(`target`, `user-service`)
       - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
       - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
       - traefik.http.routers.expense-publisher.entrypoints=http
-  
-  expense-reader:
-    hostname: expense-publisher
-    container_name: expense-publisher
-    networks:
-      - backend
-    ports:
-      - "7779:7779"
-    build: ./expensepublisher/.
-    # ?
+
 
   expense-writer:
     hostname: expense-writer
