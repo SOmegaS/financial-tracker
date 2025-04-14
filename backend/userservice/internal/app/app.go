@@ -90,6 +90,10 @@ func (a *App) CreateSession(id string, userId string) (string, error) {
 }
 
 func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.RegisterResponse, error) {
+	if len(req.Password) < 9 {
+		return nil, status.Errorf(codes.InvalidArgument, "password must be longer 8 symbols")
+	}
+
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate password hash: %v", err)
@@ -98,6 +102,7 @@ func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.Regi
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate uuid")
 	}
+	println(string(passHash))
 	err = a.queries.CreateUser(ctx, database.CreateUserParams{
 		ID:       userId,
 		Password: string(passHash),
@@ -120,7 +125,7 @@ func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginRespo
 	if err != nil {
 		return nil, err
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(req.Pass)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(req.Password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid password: %v", err)
 		}

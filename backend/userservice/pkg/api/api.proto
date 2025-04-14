@@ -16,7 +16,7 @@ message RegisterResponse {
 message LoginRequest {
   string requestId = 1;
   string username = 2;
-  string pass = 3;
+  string password = 3;
 }
 
 message LoginResponse {
