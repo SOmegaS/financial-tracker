@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Register gRPC server
-	listener, err := net.Listen("tcp", ":7778")
+	listener, err := net.Listen("tcp", ":7777")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

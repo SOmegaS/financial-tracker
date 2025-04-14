@@ -100,6 +100,21 @@ services:
     networks:
       - backend
 
+  read-service:
+    hostname: read-service
+    container_name: read-service
+    networks:
+      - backend
+    ports:
+      - "7779:7777"
+    build: ./readservice/.
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.expense-publisher.rule=Header(`target`, `read-service`)
+      - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
+      - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
+      - traefik.http.routers.expense-publisher.entrypoints=http
+
   expense-publisher:
     hostname: expense-publisher
     container_name: expense-publisher
@@ -121,14 +136,13 @@ services:
     networks:
       - backend
     ports:
-      - "7778:7778"
+      - "7778:7777"
     build: ./expensepublisher/.
     labels:
-      - traefik.http.routers.expense-publisher.middlewares=test-auth
       - traefik.enable=true
       - traefik.http.routers.expense-publisher.rule=Header(`target`, `user-service`)
       - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
-      - traefik.http.services.expense-publisher.loadbalancer.server.port=7778
+      - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
       - traefik.http.routers.expense-publisher.entrypoints=http
 
   expense-writer:
