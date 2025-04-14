@@ -14,7 +14,7 @@ import (
 const migrationsDir = "internal/database/migrations"
 
 func Open(dbName, dbUser, dbPass string) (DBTX, error) {
-	connStr := fmt.Sprintf("postgres://%v:%v@localhost:5434/%v?&sslmode=disable", dbUser, dbPass, dbName)
+	connStr := fmt.Sprintf("postgres://%v:%v@postgres-db-primary:5432/%v?&sslmode=disable", dbUser, dbPass, dbName)
 	return sql.Open("postgres", connStr)
 }
 

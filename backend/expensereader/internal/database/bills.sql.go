@@ -7,9 +7,48 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+const getBills = `-- name: GetBills :many
+
+SELECT amount, name, tmstmp
+FROM bills
+WHERE user_id = $1
+`
+
+type GetBillsRow struct {
+	Amount float64
+	Name   string
+	Tmstmp time.Time
+}
+
+// AND tmstmp >= $2
+// AND tmstmp < $3;
+func (q *Queries) GetBills(ctx context.Context, userID uuid.UUID) ([]GetBillsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBills, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetBillsRow
+	for rows.Next() {
+		var i GetBillsRow
+		if err := rows.Scan(&i.Amount, &i.Name, &i.Tmstmp); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const getReport = `-- name: GetReport :many
 SELECT category, amount

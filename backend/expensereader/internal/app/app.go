@@ -36,7 +36,7 @@ func NewApp(dbName, dbUser, dbPass string) (*App, error) {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 
-	connStr := fmt.Sprintf("postgres://%v:%v@localhost:5434/%v?&sslmode=disable", dbUser, dbPass, dbName)
+	connStr := fmt.Sprintf("postgres://%v:%v@postgres-db-replica:5432/%v?&sslmode=disable", dbUser, dbPass, dbName)
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,13 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 	if token.Claims.Valid() != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
-	r, err := a.db.GetReport(ctx, token.Claims.(jwt.MapClaims)["user_id"].(uuid.UUID))
+
+	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
+
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
+	}
+	r, err := a.db.GetReport(ctx, id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get report error: %v", err)
 	}
@@ -82,7 +88,11 @@ func (a *App) GetBills(ctx context.Context, req *api.GetBillsRequest) (*api.GetB
 	if token.Claims.Valid() != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
-	bills, err := a.db.GetBills(ctx, token.Claims.(jwt.MapClaims)["user_id"].(uuid.UUID))
+	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
+	}
+	bills, err := a.db.GetBills(ctx, id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get bills error: %v", err)
 	}

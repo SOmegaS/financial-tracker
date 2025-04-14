@@ -81,7 +81,7 @@ services:
       PGUSER: replicator
       PGPASSWORD: replicator_password
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data/
+      - ./postgres_data2:/var/lib/postgresql/data/
     command: |
       bash -c "
       until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres-db-primary --port=5432
