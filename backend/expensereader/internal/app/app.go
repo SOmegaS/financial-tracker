@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	_ "github.com/lib/pq"
 )
@@ -67,6 +68,33 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 	}
 	resp := &api.GetReportResponse{
 		Report: m,
+	}
+	return resp, nil
+}
+
+func (a *App) GetBills(ctx context.Context, req *api.GetBillsRequest) (*api.GetBillsResponse, error) {
+	token, err := jwt.Parse(req.Jwt, func(token *jwt.Token) (interface{}, error) {
+		return a.publicKey, nil
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
+	}
+	if token.Claims.Valid() != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
+	}
+	bills, err := a.db.GetBills(ctx, token.Claims.(jwt.MapClaims)["user_id"].(uuid.UUID))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "get bills error: %v", err)
+	}
+	resp := &api.GetBillsResponse{
+		Bills: make([]*api.Bill, 0, len(bills)),
+	}
+	for _, bill := range bills {
+		resp.Bills = append(resp.Bills, &api.Bill{
+			Amount: bill.Amount,
+			Name:   bill.Name,
+			Ts:     timestamppb.New(bill.Tmstmp),
+		})
 	}
 	return resp, nil
 }
