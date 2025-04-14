@@ -13,6 +13,7 @@ message CreateBillMessage {
   string category = 3;
   string user_id = 4;
   google.protobuf.Timestamp timestamp = 5;
+  string jwt = 6;
 }
 
 service Api {

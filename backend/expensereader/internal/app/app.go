@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
 	"expensereader/internal/database"
 	"expensereader/pkg/api"
@@ -60,18 +59,16 @@ func NewApp(dbName, dbUser, dbPass string) (*App, error) {
 }
 
 func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.GetReportResponse, error) {
-	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(req.Jwt, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(req.Jwt, func(token *jwt.Token) (interface{}, error) {
 		return a.publicKey, nil
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
 	}
-
-	if claims["exp"].(int64) > time.Now().Unix() {
-		return nil, status.Errorf(codes.Unauthenticated, "token expired")
+	if token.Claims.Valid() != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
-	r, err := a.db.GetReport(ctx, claims["id"].(uuid.UUID))
+	r, err := a.db.GetReport(ctx, token.Claims.(jwt.MapClaims)["id"].(uuid.UUID))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get report error: %v", err)
 	}
