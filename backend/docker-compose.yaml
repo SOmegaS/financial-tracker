@@ -144,6 +144,16 @@ services:
       - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
       - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
       - traefik.http.routers.expense-publisher.entrypoints=http
+  
+  expense-reader:
+    hostname: expense-publisher
+    container_name: expense-publisher
+    networks:
+      - backend
+    ports:
+      - "7779:7779"
+    build: ./expensepublisher/.
+    # ?
 
   expense-writer:
     hostname: expense-writer

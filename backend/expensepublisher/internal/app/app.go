@@ -2,33 +2,61 @@ package app
 
 import (
 	"context"
+	"crypto/rsa"
 	"errors"
 	"expensepublisher/pkg/api"
 	"fmt"
+	"log"
+	"math"
+	"os"
+	"strings"
+
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"log"
-	"math"
-	"strings"
 )
 
 type App struct {
 	api.UnimplementedApiServer
-	writer *kafka.Writer
+	writer     *kafka.Writer
+	privateKey *rsa.PrivateKey
+	publicKey  *rsa.PublicKey
 }
 
 func NewApp() (*App, error) {
+	privKeyData, err := os.ReadFile("../../secret/private.key")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read private key: %w", err)
+	}
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privKeyData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	// Optionally load public key (for verification elsewhere)
+	pubKeyData, err := os.ReadFile("../../secret/public.key")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read public key: %w", err)
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKeyData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
 	w := &kafka.Writer{
 		Addr:         kafka.TCP("kafka-moscow:9092"),
 		Topic:        "write-bills",
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireOne,
 	}
-	return &App{writer: w}, nil
+	return &App{
+		writer:     w,
+		privateKey: privateKey,
+		publicKey:  publicKey,
+	}, nil
 }
 
 func validateCreateBillMessage(msg *api.CreateBillMessage) error {
@@ -59,10 +87,21 @@ func validateCreateBillMessage(msg *api.CreateBillMessage) error {
 func (a *App) CreateBill(ctx context.Context, msg *api.CreateBillMessage) (*emptypb.Empty, error) {
 	log.Println("Принят rpc вызов")
 
+	token, err := jwt.Parse(msg.Jwt, func(token *jwt.Token) (interface{}, error) {
+		return a.publicKey, nil
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
+	}
+	if token.Claims.Valid() != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
+	}
+
 	if err := validateCreateBillMessage(msg); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)
 	}
-	err := a.CreateBillPublisher(ctx, msg)
+
+	err = a.CreateBillPublisher(ctx, msg)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal error: %v", err)
 	}

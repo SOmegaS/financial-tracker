@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -20,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Api_CreateBill_FullMethodName = "/api.Api/CreateBill"
+	Api_GetReport_FullMethodName = "/api.Api/GetReport"
 )
 
 // ApiClient is the client API for Api service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ApiClient interface {
-	CreateBill(ctx context.Context, in *CreateBillMessage, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetReport(ctx context.Context, in *GetReportRequest, opts ...grpc.CallOption) (*GetReportResponse, error)
 }
 
 type apiClient struct {
@@ -38,10 +37,10 @@ func NewApiClient(cc grpc.ClientConnInterface) ApiClient {
 	return &apiClient{cc}
 }
 
-func (c *apiClient) CreateBill(ctx context.Context, in *CreateBillMessage, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *apiClient) GetReport(ctx context.Context, in *GetReportRequest, opts ...grpc.CallOption) (*GetReportResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, Api_CreateBill_FullMethodName, in, out, cOpts...)
+	out := new(GetReportResponse)
+	err := c.cc.Invoke(ctx, Api_GetReport_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +51,7 @@ func (c *apiClient) CreateBill(ctx context.Context, in *CreateBillMessage, opts 
 // All implementations must embed UnimplementedApiServer
 // for forward compatibility.
 type ApiServer interface {
-	CreateBill(context.Context, *CreateBillMessage) (*emptypb.Empty, error)
+	GetReport(context.Context, *GetReportRequest) (*GetReportResponse, error)
 	mustEmbedUnimplementedApiServer()
 }
 
@@ -63,8 +62,8 @@ type ApiServer interface {
 // pointer dereference when methods are called.
 type UnimplementedApiServer struct{}
 
-func (UnimplementedApiServer) CreateBill(context.Context, *CreateBillMessage) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateBill not implemented")
+func (UnimplementedApiServer) GetReport(context.Context, *GetReportRequest) (*GetReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReport not implemented")
 }
 func (UnimplementedApiServer) mustEmbedUnimplementedApiServer() {}
 func (UnimplementedApiServer) testEmbeddedByValue()             {}
@@ -87,20 +86,20 @@ func RegisterApiServer(s grpc.ServiceRegistrar, srv ApiServer) {
 	s.RegisterService(&Api_ServiceDesc, srv)
 }
 
-func _Api_CreateBill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateBillMessage)
+func _Api_GetReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReportRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApiServer).CreateBill(ctx, in)
+		return srv.(ApiServer).GetReport(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Api_CreateBill_FullMethodName,
+		FullMethod: Api_GetReport_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiServer).CreateBill(ctx, req.(*CreateBillMessage))
+		return srv.(ApiServer).GetReport(ctx, req.(*GetReportRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -113,8 +112,8 @@ var Api_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ApiServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateBill",
-			Handler:    _Api_CreateBill_Handler,
+			MethodName: "GetReport",
+			Handler:    _Api_GetReport_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
