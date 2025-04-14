@@ -1,0 +1,1 @@
+create unique index users_user_id_idx on users (username);
