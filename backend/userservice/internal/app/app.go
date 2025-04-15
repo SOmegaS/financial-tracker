@@ -102,7 +102,6 @@ func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.Regi
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate uuid")
 	}
-	println(string(passHash))
 	err = a.queries.CreateUser(ctx, database.CreateUserParams{
 		ID:       userId,
 		Password: string(passHash),

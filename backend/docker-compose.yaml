@@ -11,6 +11,12 @@ services:
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
   kafka-moscow:
     container_name: kafka-moscow
     image: confluentinc/cp-kafka:latest
@@ -33,6 +39,12 @@ services:
       KAFKA_LOG_RETENTION_HOURS: 168  # Keep logs for 7 days.
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # No delay for consumer rebalancing.
       CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"  # A unique ID for the Kafka cluster.
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
     networks:
       - backend
 
@@ -49,6 +61,17 @@ services:
       - "5434:5432"
     networks:
       - backend
+    healthcheck:
+      test: [ "CMD", "pg_isready",  "-U", "ivang", "-d", "db" ]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   postgres-db-primary:
     image: postgres:latest
@@ -74,6 +97,18 @@ services:
       - "5432:5432"
     networks:
       - backend
+    healthcheck:
+      test: [ "CMD", "pg_isready",  "-U", "ivang", "-d", "db" ]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
   postgres-db-replica:
     image: postgres:latest
     container_name: postgres-db-replica
@@ -81,7 +116,7 @@ services:
       PGUSER: replicator
       PGPASSWORD: replicator_password
     volumes:
-      - ./postgres_data2:/var/lib/postgresql/data/
+      - ./postgres_data_replica:/var/lib/postgresql/data/
     command: |
       bash -c "
       until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres-db-primary --port=5432
@@ -94,15 +129,25 @@ services:
       su postgres -c postgres
       "
     depends_on:
-      - postgres-db-primary
+      postgres-db-primary:
+        condition: service_healthy
     ports:
       - "5433:5432"
     networks:
       - backend
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   expense-reader:
     hostname: expense-reader
     container_name: expense-reader
+    depends_on:
+      postgres-db-replica:
+        condition: service_healthy
     networks:
       - backend
     ports:
@@ -114,10 +159,19 @@ services:
       - traefik.http.services.expense-reader.loadbalancer.server.scheme=h2c
       - traefik.http.services.expense-reader.loadbalancer.server.port=7777
       - traefik.http.routers.expense-reader.entrypoints=http
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   expense-publisher:
     hostname: expense-publisher
     container_name: expense-publisher
+    depends_on:
+      kafka-moscow:
+        condition: service_started
     networks:
       - backend
     ports:
@@ -129,10 +183,18 @@ services:
       - traefik.http.services.expense-publisher.loadbalancer.server.scheme=h2c
       - traefik.http.services.expense-publisher.loadbalancer.server.port=7777
       - traefik.http.routers.expense-publisher.entrypoints=http
-
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
   user-service:
     hostname: user-service
     container_name: user-service
+    depends_on:
+      postgres-users:
+        condition: service_started
     networks:
       - backend
     ports:
@@ -144,6 +206,12 @@ services:
       - traefik.http.services.user-service.loadbalancer.server.scheme=h2c
       - traefik.http.services.user-service.loadbalancer.server.port=7777
       - traefik.http.routers.user-service.entrypoints=http
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
 
   expense-writer:
@@ -151,7 +219,11 @@ services:
     container_name: expense-writer
     networks:
       - backend
-    depends_on: [ kafka-moscow, postgres-db-primary ]
+    depends_on:
+      kafka-moscow:
+        condition: service_started
+      postgres-db-primary:
+        condition: service_healthy
     build: ./expensewriter/.
     ports:
       - "8081:8080"
@@ -160,14 +232,13 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 120s
-        max_attempts: 3
+        delay: 60s
+        max_attempts: 10
         window: 240s
       resources:
         limits:
           memory: 1024M
           cpus: "1"
-
 
 networks:
   backend:
