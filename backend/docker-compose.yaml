@@ -260,11 +260,11 @@ services:
       - backend
     build:
       context: .
-      dockerfile: /envoy/Dockerfile
+      dockerfile: ./envoy/Dockerfile
       args:
         ENVOY_CONFIG: ./envoy/envoy.yaml
     ports:
-      - "1337:1337"
+      - "1337:1337" # elite
 
 networks:
   backend:
