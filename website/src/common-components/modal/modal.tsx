@@ -26,6 +26,7 @@ function CustomModal({
     size = 'md',
     isDisabled = false,
 }: IModalProps) {
+    if (!isOpen) return null;
     return (
         <Modal
             opened={isOpen}
