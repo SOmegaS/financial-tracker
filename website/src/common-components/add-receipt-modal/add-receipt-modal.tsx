@@ -1,30 +1,46 @@
-import { TextInput, NumberInput } from '@mantine/core';
+import { TextInput, NumberInput, Autocomplete } from '@mantine/core';
 import {
     IconReceipt,
     IconCalendar,
     IconCurrencyRubel,
+    IconCategory,
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { Modal } from '../../common-components';
 import { DateInput } from '@mantine/dates';
-import { memo } from 'react';
+import { memo, useMemo, useState } from 'react';
+import { initialState } from '../../services/initial-state.ts';
 
 interface AddReceiptModalProps {
     opened: boolean;
     onClose: () => void;
-    categoryName: string;
+    categoryName?: string;
 }
 
 function AddReceiptModal({
     opened,
     onClose,
-    categoryName,
+    categoryName = '',
 }: AddReceiptModalProps) {
+    const [searchValue] = useState('');
+    const [categoryOptions] = useState(() =>
+        initialState.categories.map((category) => category.name)
+    );
+
+    const filteredCategories = useMemo(
+        () =>
+            categoryOptions.filter((name) =>
+                name.toLowerCase().includes(searchValue.toLowerCase())
+            ),
+        [searchValue, categoryOptions]
+    );
+
     const form = useForm({
         initialValues: {
             title: '',
             date: new Date(),
             amount: 0,
+            category: categoryName || '',
         },
         validate: {
             title: (value) =>
@@ -33,18 +49,25 @@ function AddReceiptModal({
                 value <= 0 ? 'Сумма должна быть больше 0' : null,
             date: (value) =>
                 !value ? 'Дата обязательна для заполнения' : null,
+            category: (value) =>
+                !categoryName && !value ? 'Выберите категорию' : null,
         },
     });
 
     const handleSubmit = () => {
-        console.log(form.values);
+        console.log({
+            ...form.values,
+            category: form.values.category || categoryName,
+        });
         form.reset();
         onClose();
     };
 
+    if (!opened) return null;
+
     return (
         <Modal
-            title={`Добавить чек в ${categoryName}`}
+            title={`Добавить чек${categoryName ? ` в ${categoryName}` : ''}`}
             isOpen={opened}
             saveText="Добавить"
             onClose={() => {
@@ -55,6 +78,21 @@ function AddReceiptModal({
             isDisabled={!form.isValid() || !form.isDirty()}
         >
             <form onSubmit={form.onSubmit(handleSubmit)}>
+                {!categoryName && (
+                    <Autocomplete
+                        clearable
+                        label="Категория"
+                        placeholder="Выберите или введите новую категорию"
+                        withAsterisk
+                        mb="md"
+                        leftSection={<IconCategory size={16} />}
+                        data={filteredCategories}
+                        value={form.values.category}
+                        onChange={(value) =>
+                            form.setFieldValue('category', value)
+                        }
+                    />
+                )}
                 <TextInput
                     label="Название чека"
                     placeholder="Например: Продукты"

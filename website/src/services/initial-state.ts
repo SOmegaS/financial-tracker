@@ -7,110 +7,110 @@ interface IInitialState {
     isLogin: boolean;
 }
 export const initialState: IInitialState = {
-    isLogin: true,
+    isLogin: false,
     categories: [
         {
             id: '1',
-            name: 'Еда',
+            name: 'Еда 1',
             totalSum: 500,
         },
         {
             id: '2',
-            name: 'Жилье',
+            name: 'Жилье 1',
             totalSum: 1200,
         },
         {
             id: '3',
-            name: 'Развлечения',
+            name: 'Развлечения 1',
             totalSum: 0,
         },
 
         {
             id: '4',
-            name: 'ВБ',
+            name: 'ВБ 1',
             totalSum: 4333,
         },
         {
             id: '5',
-            name: 'Командировка',
+            name: 'Командировка 1',
             totalSum: 542,
         },
         {
             id: '6',
-            name: 'Метро',
+            name: 'Метро 1',
             totalSum: 445,
         },
 
         {
             id: '7',
-            name: 'Машина',
+            name: 'Машина 1',
             totalSum: 52200,
         },
         {
             id: '8',
-            name: 'Путешествия',
+            name: 'Путешествия 1',
             totalSum: 4123,
         },
         {
             id: '9',
-            name: 'Техника',
+            name: 'Техника 1',
             totalSum: 47138,
         },
         {
             id: '10',
-            name: 'Коммуналка',
+            name: 'Коммуналка 12',
             totalSum: 10000,
         },
         {
             id: '11',
-            name: 'Еда',
+            name: 'Еда3',
             totalSum: 500,
         },
         {
             id: '12',
-            name: 'Жилье',
+            name: 'Жилье5',
             totalSum: 1200,
         },
         {
             id: '13',
-            name: 'Развлечения',
+            name: 'Развлечения4',
             totalSum: 0,
         },
 
         {
             id: '14',
-            name: 'ВБ',
+            name: 'ВБ6',
             totalSum: 4333,
         },
         {
             id: '15',
-            name: 'Командировка',
+            name: 'Командировка4',
             totalSum: 542,
         },
         {
             id: '16',
-            name: 'Метро',
+            name: 'Метро134',
             totalSum: 445,
         },
 
         {
             id: '17',
-            name: 'Машина',
+            name: 'Машина512',
             totalSum: 52200,
         },
         {
             id: '18',
-            name: 'Путешествия',
+            name: 'Путешествия54',
             totalSum: 4123,
         },
         {
             id: '19',
-            name: 'Техника',
+            name: 'Техника666',
             totalSum: 47138,
         },
         {
             id: '20',
-            name: 'Коммуналка',
+            name: 'Коммуналка624',
             totalSum: 10000,
         },
     ],

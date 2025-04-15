@@ -8,10 +8,9 @@ import { useNavigate } from 'react-router-dom';
 interface CategoryCardProps {
     name: string;
     totalAmount: number;
-    id: string;
 }
 
-function CategoryCard({ name, totalAmount, id }: CategoryCardProps) {
+function CategoryCard({ name, totalAmount }: CategoryCardProps) {
     const [isOpenModal, setIsOpenModal] = useState(false);
     const navigate = useNavigate();
 
@@ -48,7 +47,11 @@ function CategoryCard({ name, totalAmount, id }: CategoryCardProps) {
                         leftSection={<IconReceipt className={style.icon} />}
                         variant="light"
                         color="cyan.7"
-                        onClick={() => navigate(`/category/${id}`)}
+                        onClick={() =>
+                            navigate(
+                                `/category/${btoa(encodeURIComponent(name))}`
+                            )
+                        }
                     >
                         Показать все чеки
                     </Button>
