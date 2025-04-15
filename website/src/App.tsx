@@ -20,7 +20,7 @@ function App() {
                                 element={<CategoriesPage />}
                             />
                             <Route
-                                path={'/category/:id'}
+                                path={'/category/:name'}
                                 element={<CategoryPage />}
                             />
                             <Route
