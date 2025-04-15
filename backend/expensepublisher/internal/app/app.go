@@ -73,19 +73,19 @@ func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Em
 	token, err := jwt.Parse(msg.Jwt, func(token *jwt.Token) (interface{}, error) {
 		return a.publicKey, nil
 	})
-
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
+		return nil, status.Errorf(codes.Unauthenticated, "parse token error: %v", err)
 	}
 
-	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
-	log.Printf("Принят rpc запрос от пользователя с id = %v", id)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
-	}
 	if token.Claims.Valid() != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
+
+	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
+	}
+	log.Printf("Принят rpc запрос от пользователя с id = %v", id)
 
 	if err := validateCreateBillMessage(msg); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)

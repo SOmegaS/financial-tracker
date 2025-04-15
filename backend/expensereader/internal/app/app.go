@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
 	"expensereader/internal/database"
@@ -53,8 +54,9 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 		return a.publicKey, nil
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
+		return nil, status.Errorf(codes.Unauthenticated, "parse token error: %v", err)
 	}
+
 	if token.Claims.Valid() != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
@@ -63,10 +65,12 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
+	log.Printf("Принят rpc запрос от пользоваля с user_id = %v", id)
 	r, err := a.db.GetReport(ctx, id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get report error: %v", err)
 	}
+
 	m := make(map[string]float64)
 	for _, bill := range r {
 		m[bill.Category] += bill.Amount

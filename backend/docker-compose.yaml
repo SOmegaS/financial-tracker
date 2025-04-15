@@ -116,7 +116,7 @@ services:
       PGUSER: replicator
       PGPASSWORD: replicator_password
     volumes:
-      - ./postgres_data_replica:/var/lib/postgresql/data/
+      - ./replicated_data:/var/lib/postgresql/data
     command: |
       bash -c "
       until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=postgres-db-primary --port=5432
@@ -128,11 +128,6 @@ services:
       chmod 0700 /var/lib/postgresql/data
       su postgres -c postgres
       "
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER" ]
-      interval: 2s
-      timeout: 1s
-      retries: 5
     depends_on:
       postgres-db-primary:
         condition: service_healthy
@@ -152,7 +147,7 @@ services:
     container_name: expense-reader
     depends_on:
       postgres-db-replica:
-        condition: service_healthy
+        condition: service_started
     networks:
       - backend
     ports:
