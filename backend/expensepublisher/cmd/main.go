@@ -6,11 +6,13 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"os"
 )
 
 func main() {
-	// Create app
-	a, err := app.NewApp()
+	kafkaHostPort := os.Getenv("KAFKA_HOST_PORT")
+	topicName := os.Getenv("TOPIC_NAME")
+	a, err := app.NewApp(kafkaHostPort, topicName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,7 +25,7 @@ func main() {
 	s := grpc.NewServer()
 	api.RegisterApiServer(s, a)
 
-	log.Println("Успешная настройка")
+	log.Println("Приложение запущено")
 
 	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)

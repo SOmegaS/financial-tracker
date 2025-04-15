@@ -14,10 +14,12 @@ import java.util.Map;
 
 @Configuration
 public class KafkaCreateBillConsumerConfig {
+    @Value("${app.kafka.server:kafka-moscow:9092}")
+    private String kafkaServer;
     @Bean
     public ConsumerFactory<String, CreateBillProto.CreateBill> createBillConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka-moscow:9092");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "write-bill-consumer");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaCreateBillProtoDeserializer.class);

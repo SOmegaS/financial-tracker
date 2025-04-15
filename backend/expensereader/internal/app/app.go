@@ -26,7 +26,7 @@ type App struct {
 	publicKey  *rsa.PublicKey
 }
 
-func NewApp(dbName, dbUser, dbPass string) (*App, error) {
+func NewApp(dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
 	pubKeyData, err := os.ReadFile("secret/public.key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key: %w", err)
@@ -36,7 +36,7 @@ func NewApp(dbName, dbUser, dbPass string) (*App, error) {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 
-	connStr := fmt.Sprintf("postgres://%v:%v@postgres-db-replica:5432/%v?&sslmode=disable", dbUser, dbPass, dbName)
+	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?&sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err

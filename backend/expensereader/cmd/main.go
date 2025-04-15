@@ -5,16 +5,19 @@ import (
 	"expensereader/pkg/api"
 	"log"
 	"net"
+	"os"
 
 	"google.golang.org/grpc"
 )
 
 func main() {
 	// Get env vars
-	dbUser := "ivang"
-	dbPass := "ivang"
-	dbName := "db"
-	a, err := app.NewApp(dbName, dbUser, dbPass)
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+	a, err := app.NewApp(dbName, dbUser, dbHost, dbPort, dbPass)
 	if err != nil {
 		log.Fatalf("failed to create app: %v", err)
 	}
@@ -25,6 +28,7 @@ func main() {
 	defer listener.Close()
 	s := grpc.NewServer()
 	api.RegisterApiServer(s, a)
+	log.Println("Приложение запущено")
 	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

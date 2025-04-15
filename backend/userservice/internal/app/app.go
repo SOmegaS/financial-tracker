@@ -5,21 +5,21 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"log"
 	"os"
 	"time"
 
-	"user-service/internal/database"
-	"user-service/pkg/api"
-
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"user-service/internal/database"
+	"user-service/pkg/api"
 )
 
-const ExpirationTime = time.Hour
+const expirationTime = time.Hour
 
 type App struct {
 	api.UnimplementedApiServer
@@ -30,8 +30,9 @@ type App struct {
 	privateKey *rsa.PrivateKey
 }
 
-func NewApp(dbName, dbUser, dbPass string) (*App, error) {
-	db, err := database.Open(dbName, dbUser, dbPass)
+// NewApp инициализирует подключение к базе данных
+func NewApp(dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
+	db, err := database.Open(dbName, dbUser, dbHost, dbPort, dbPass)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +42,7 @@ func NewApp(dbName, dbUser, dbPass string) (*App, error) {
 	}, nil
 }
 
+// Init применяет миграции и загружает ключи
 func (a *App) Init() error {
 	isChanged, err := database.RunMigrations(a.db, a.dbName)
 	if err != nil {
@@ -51,6 +53,7 @@ func (a *App) Init() error {
 	}
 	a.queries = database.New(a.db)
 
+	// Загрузка приватного ключа
 	privKeyData, err := os.ReadFile("secret/private.key")
 	if err != nil {
 		return fmt.Errorf("failed to read private key: %w", err)
@@ -61,7 +64,7 @@ func (a *App) Init() error {
 	}
 	a.privateKey = privateKey
 
-	// Optionally load public key (for verification elsewhere)
+	// Загрузка публичного ключа
 	pubKeyData, err := os.ReadFile("secret/public.key")
 	if err != nil {
 		return fmt.Errorf("failed to read public key: %w", err)
@@ -72,36 +75,41 @@ func (a *App) Init() error {
 	}
 	a.publicKey = publicKey
 
-	return err
+	return nil
 }
 
+// Run запускает приложение
 func (a *App) Run() {
-	fmt.Print("Hello, world!")
+	fmt.Println("Приложение запущено.")
 }
 
-func (a *App) CreateSession(id string, userId string) (string, error) {
+// CreateSession создает JWT-токен сессии
+func (a *App) CreateSession(id, userId string) (string, error) {
 	claims := jwt.MapClaims{
 		"id":      id,
-		"exp":     time.Now().Add(ExpirationTime).Unix(),
+		"exp":     time.Now().Add(expirationTime).Unix(),
 		"user_id": userId,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	return token.SignedString(a.privateKey)
 }
 
+// Register обрабатывает регистрацию нового пользователя
 func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.RegisterResponse, error) {
 	if len(req.Password) < 9 {
-		return nil, status.Errorf(codes.InvalidArgument, "password must be longer 8 symbols")
+		return nil, status.Errorf(codes.InvalidArgument, "password must be longer than 8 characters")
 	}
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate password hash: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to hash password: %v", err)
 	}
+
 	userId, err := uuid.NewUUID()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to generate uuid")
+		return nil, status.Errorf(codes.Internal, "failed to generate UUID")
 	}
+
 	err = a.queries.CreateUser(ctx, database.CreateUserParams{
 		ID:       userId,
 		Password: string(passHash),
@@ -110,30 +118,36 @@ func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.Regi
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
+
 	jwt, err := a.CreateSession(req.RequestId, userId.String())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create session: %v", err)
 	}
+
 	return &api.RegisterResponse{
 		Jwt: jwt,
 	}, nil
 }
 
+// Login обрабатывает авторизацию пользователя
 func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginResponse, error) {
 	userInfo, err := a.queries.GetUserIdPassword(ctx, req.GetUsername())
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(req.Password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return nil, status.Errorf(codes.Unauthenticated, "invalid password: %v", err)
+			return nil, status.Errorf(codes.Unauthenticated, "invalid credentials")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to compare password hash: %v", err)
+		return nil, status.Errorf(codes.Internal, "password comparison failed: %v", err)
 	}
+
 	jwt, err := a.CreateSession(req.RequestId, userInfo.ID.String())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create session: %v", err)
 	}
+
 	return &api.LoginResponse{
 		Jwt: jwt,
 	}, nil

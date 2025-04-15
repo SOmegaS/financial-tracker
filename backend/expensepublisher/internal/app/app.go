@@ -26,7 +26,7 @@ type App struct {
 	publicKey *rsa.PublicKey
 }
 
-func NewApp() (*App, error) {
+func NewApp(kafkaHostPort, topicName string) (*App, error) {
 	pubKeyData, err := os.ReadFile("secret/public.key")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key: %w", err)
@@ -35,12 +35,14 @@ func NewApp() (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
+
 	w := &kafka.Writer{
-		Addr:         kafka.TCP("kafka-moscow:9092"),
-		Topic:        "write-bills",
+		Addr:         kafka.TCP(kafkaHostPort),
+		Topic:        topicName,
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireOne,
 	}
+
 	return &App{
 		writer:    w,
 		publicKey: publicKey,
@@ -67,7 +69,6 @@ func validateCreateBillMessage(msg *api.BillMessage) error {
 }
 
 func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Empty, error) {
-	log.Println("Принят rpc вызов")
 
 	token, err := jwt.Parse(msg.Jwt, func(token *jwt.Token) (interface{}, error) {
 		return a.publicKey, nil
@@ -78,6 +79,7 @@ func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Em
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
+	log.Printf("Принят rpc запрос от пользователя с id = %v", id)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
@@ -89,14 +91,14 @@ func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Em
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)
 	}
 
-	err = a.CreateBillPublisher(ctx, id, msg)
+	err = a.publishMessage(ctx, id, msg)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal error: %v", err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
-func (a *App) CreateBillPublisher(ctx context.Context, userId uuid.UUID, msg *api.BillMessage) error {
+func (a *App) publishMessage(ctx context.Context, userId uuid.UUID, msg *api.BillMessage) error {
 	writeMessage := &api.CreateBillMessage{
 		Name:      msg.Name,
 		Amount:    msg.Amount,

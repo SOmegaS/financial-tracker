@@ -17,13 +17,13 @@ public class BillsListener {
     private final BillService billService;
 
     @KafkaListener(
-            topics = "write-bills",
+            topics = "${app.kafka.target-topic:write-bills}",
             containerFactory = "createBillListenerContainerFactory"
     )
     public void consume(List<CreateBillProto.CreateBill> messages) {
         log.info("Received {} messages {}", messages.size(), Thread.currentThread().getName());
         log.info(messages.getFirst().toString());
         billService.batchCreateBills(messages);
-        log.info("Обработка закончена");
+        log.info("Batch complete");
     }
 }
