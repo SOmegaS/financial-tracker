@@ -25,6 +25,8 @@ const AddCategoryModal = ({ isOpen, onClose }: AddCategoryModalProps) => {
         onClose();
     };
 
+    if (!isOpen) return null;
+
     return (
         <Modal
             isOpen={isOpen}

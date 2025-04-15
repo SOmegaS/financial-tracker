@@ -42,6 +42,8 @@ function AddReceiptModal({
         onClose();
     };
 
+    if (!opened) return null;
+
     return (
         <Modal
             title={`Добавить чек в ${categoryName}`}
