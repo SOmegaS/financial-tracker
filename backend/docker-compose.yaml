@@ -255,6 +255,17 @@ services:
           memory: 1024M
           cpus: "1"
 
+  envoy:
+    networks:
+      - backend
+    build:
+      context: .
+      dockerfile: /envoy/Dockerfile
+      args:
+        ENVOY_CONFIG: ./envoy/envoy.yaml
+    ports:
+      - "1337:1337"
+
 networks:
   backend:
     name: backend
