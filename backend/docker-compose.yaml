@@ -3,7 +3,7 @@ services:
     image: traefik:v3.3
     command: --api.insecure=true --providers.docker
     networks:
-      - backend
+      - backend   
     ports:
       # The HTTP port
       - "80:80"
@@ -145,7 +145,6 @@ services:
       - traefik.http.services.user-service.loadbalancer.server.port=7777
       - traefik.http.routers.user-service.entrypoints=http
 
-
   expense-writer:
     hostname: expense-writer
     container_name: expense-writer
@@ -168,6 +167,16 @@ services:
           memory: 1024M
           cpus: "1"
 
+  envoy:
+    networks:
+      - backend
+    build:
+      context: .
+      dockerfile: /envoy/Dockerfile
+      args:
+        ENVOY_CONFIG: ./envoy/envoy.yaml
+    ports:
+      - "1337:1337"
 
 networks:
   backend:
