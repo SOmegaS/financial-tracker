@@ -8,4 +8,5 @@ WHERE user_id = $1;
 -- name: GetBills :many
 SELECT amount, name, tmstmp
 FROM bills
-WHERE user_id = $1;
+WHERE user_id = $1
+AND category = $2;

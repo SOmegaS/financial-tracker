@@ -17,7 +17,13 @@ const getBills = `-- name: GetBills :many
 SELECT amount, name, tmstmp
 FROM bills
 WHERE user_id = $1
+AND category = $2
 `
+
+type GetBillsParams struct {
+	UserID   uuid.UUID
+	Category string
+}
 
 type GetBillsRow struct {
 	Amount float64
@@ -27,8 +33,8 @@ type GetBillsRow struct {
 
 // AND tmstmp >= $2
 // AND tmstmp < $3;
-func (q *Queries) GetBills(ctx context.Context, userID uuid.UUID) ([]GetBillsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getBills, userID)
+func (q *Queries) GetBills(ctx context.Context, arg GetBillsParams) ([]GetBillsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBills, arg.UserID, arg.Category)
 	if err != nil {
 		return nil, err
 	}

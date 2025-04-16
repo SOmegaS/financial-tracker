@@ -95,7 +95,10 @@ func (a *App) GetBills(ctx context.Context, req *api.GetBillsRequest) (*api.GetB
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
-	bills, err := a.db.GetBills(ctx, id)
+	bills, err := a.db.GetBills(ctx, database.GetBillsParams{
+		UserID:   id,
+		Category: req.Category,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get bills error: %v", err)
 	}
