@@ -1,8 +1,11 @@
 import AuthForm from '../../common-components/auth-form';
+import { useDispatch } from 'react-redux';
+import { login } from '../../services/actions/login.ts';
 
 export function SignInPage() {
+    const dispatch = useDispatch();
     const handleSignIn = (email: string, password: string) => {
-        console.log('Вход с:', { email, password });
+        dispatch(login(email, password));
     };
 
     return (

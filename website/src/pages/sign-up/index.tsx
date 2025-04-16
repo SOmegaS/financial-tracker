@@ -1,8 +1,11 @@
 import AuthForm from '../../common-components/auth-form';
+import { register } from '../../services/actions/register.ts';
+import { useDispatch } from 'react-redux';
 
 export function SignUpPage() {
+    const dispatch = useDispatch();
     const handleSignUp = (email: string, password: string) => {
-        console.log('Регистрация с:', { email, password });
+        dispatch(register(email, password));
     };
 
     return (

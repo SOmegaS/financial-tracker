@@ -1,6 +1,5 @@
 import { api } from "../proto/generated/common"
-
-
+import { google }from "../proto/generated/google/protobuf/timestamp"
 
 class APIService {
     private client = new api.ApiClient('http://localhost:1337')
@@ -54,12 +53,16 @@ class APIService {
     }
 
     public createBill(name: string, amount: number, category: string, user_id: string, ts: number, jwt: string): Promise<boolean> {
+        let timestamp = new google.protobuf.Timestamp({
+            seconds: ts,
+            nanos: 0
+        })
         let msg = {
             name: name,
             amount: amount,
             category: category,
             user_id: user_id,
-            ts: ts,
+            timestamp: timestamp,
             jwt: jwt
         }
         let meta = {
@@ -76,6 +79,7 @@ class APIService {
             })
         })
     }
+
 
     public getReport(jwt: string): Promise<api.GetReportResponse> {
         let msg = {
@@ -98,7 +102,7 @@ class APIService {
 
     public getBills(jwt: string, category: string): Promise<api.GetBillsResponse> {
         let msg = {
-            jwt: jwt, 
+            jwt: jwt,
             category: category
         }
         let meta = {

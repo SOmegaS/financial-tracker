@@ -11,13 +11,18 @@ import {
 import styles from './header.module.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IconCoin, IconSettings, IconLogout } from '@tabler/icons-react';
-import { initialState } from '../../services/initial-state.ts';
+import { useDispatch, useSelector } from 'react-redux';
+import { IState } from '../../types.ts';
+import { LOGOUT } from '../../services/actions';
 
 function Header() {
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
     const [active, setActive] = useState(0);
     const [popoverOpened, setPopoverOpened] = useState(false);
+
+    const isAuth = useSelector((state: IState) => state.isAuth);
 
     useEffect(() => {
         if (location.pathname === '/sign-in') {
@@ -30,7 +35,8 @@ function Header() {
     }, [location.pathname]);
 
     const handleLogout = () => {
-        console.log('User logged out');
+        dispatch({ type: LOGOUT });
+        localStorage.removeItem('authToken');
         setPopoverOpened(false);
         navigate('/sign-in');
     };
@@ -53,7 +59,7 @@ function Header() {
                 </Group>
 
                 <Group gap="md">
-                    {initialState.isLogin ? (
+                    {isAuth ? (
                         <Popover
                             width={200}
                             position="bottom-end"
@@ -86,7 +92,7 @@ function Header() {
                         </Popover>
                     ) : null}
 
-                    {!initialState.isLogin && (
+                    {!isAuth && (
                         <Group
                             gap={15}
                             visibleFrom="xm"

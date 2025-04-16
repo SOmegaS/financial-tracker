@@ -1,14 +1,26 @@
 import { Table, Text, Paper, Badge } from '@mantine/core';
-import { initialState } from '../../services/initial-state.ts';
 import { SectionHeader } from '../../common-components';
 import style from './category.module.css';
 import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { IState } from '../../types.ts';
+import {getBills} from "../../services/actions/get-biils.ts";
 
 function CategoryPage() {
     const { name } = useParams();
     const decodedName = name ? decodeURIComponent(atob(name)) : '';
+    const receipts = useSelector((state: IState) => state.receipts);
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(getBills(decodedName));
+    }, [dispatch]);
 
-    const rows = initialState.receipts.map((receipt) => (
+    if (!receipts || !receipts.length) {
+        return null;
+    }
+
+    const rows = receipts.map((receipt) => (
         <Table.Tr key={receipt.id}>
             <Table.Td>
                 <Text fw={500}>{receipt.name}</Text>

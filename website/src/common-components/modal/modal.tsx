@@ -13,19 +13,21 @@ interface IModalProps {
     cancelText?: string;
     size?: string | number;
     isDisabled?: boolean;
+    isLoading?: boolean;
 }
 
 function CustomModal({
-    title,
-    isOpen,
-    onClose,
-    children,
-    onSave = () => {},
-    saveText = 'Сохранить',
-    cancelText = 'Отмена',
-    size = 'md',
-    isDisabled = false,
-}: IModalProps) {
+                         title,
+                         isOpen,
+                         onClose,
+                         children,
+                         onSave = () => {},
+                         saveText = 'Сохранить',
+                         cancelText = 'Отмена',
+                         size = 'md',
+                         isDisabled = false,
+                         isLoading = false,
+                     }: IModalProps) {
     if (!isOpen) return null;
     return (
         <Modal
@@ -56,10 +58,11 @@ function CustomModal({
 
             <Group justify="flex-end" mt="md">
                 <Button
+                    loading={isLoading}
                     variant="filled"
                     color="teal"
                     onClick={onSave}
-                    disabled={isDisabled}
+                    disabled={isDisabled || isLoading}
                     leftSection={<IconCheck className={style.icon} />}
                 >
                     {saveText}

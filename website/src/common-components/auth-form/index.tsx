@@ -20,12 +20,12 @@ interface AuthFormProps {
 }
 
 function AuthForm({
-    title,
-    buttonText,
-    linkText,
-    linkTo,
-    onSubmit,
-}: AuthFormProps) {
+                      title,
+                      buttonText,
+                      linkText,
+                      linkTo,
+                      onSubmit,
+                  }: AuthFormProps) {
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [emailError, setEmailError] = useState<string | null>(null);
@@ -47,8 +47,8 @@ function AuthForm({
 
     const handlePasswordChange = (value: string) => {
         setPassword(value);
-        if (value && value.length < 6) {
-            setPasswordError('Пароль должен содержать минимум 6 символов');
+        if (value && value.length <= 8) {
+            setPasswordError('Пароль должен содержать минимум 9 символов');
         } else {
             setPasswordError(null);
         }

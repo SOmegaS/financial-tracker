@@ -3,8 +3,8 @@
  * compiler version: 6.30.2
  * source: common.proto
  * git: https://github.com/thesayyn/protoc-gen-ts */
-import * as dependency_1 from "./google\\protobuf\\timestamp";
-import * as dependency_2 from "./google\\protobuf\\empty";
+import * as dependency_1 from "./google/protobuf/timestamp";
+import * as dependency_2 from "./google/protobuf/empty";
 import * as pb_1 from "google-protobuf";
 import * as grpc_1 from "@grpc/grpc-js";
 import * as grpc_web_1 from "grpc-web";

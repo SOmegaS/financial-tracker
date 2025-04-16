@@ -9,7 +9,10 @@ import { useForm } from '@mantine/form';
 import { Modal } from '../../common-components';
 import { DateInput } from '@mantine/dates';
 import { memo, useMemo, useState } from 'react';
-import { initialState } from '../../services/initial-state.ts';
+import { useDispatch, useSelector } from 'react-redux';
+import { createReceipt } from '../../services/actions/create-receipt.ts';
+import { IState } from '../../types.ts';
+import { getCategories } from '../../services/actions/get-categories.ts';
 
 interface AddReceiptModalProps {
     opened: boolean;
@@ -18,14 +21,21 @@ interface AddReceiptModalProps {
 }
 
 function AddReceiptModal({
-    opened,
-    onClose,
-    categoryName = '',
-}: AddReceiptModalProps) {
+                             opened,
+                             onClose,
+                             categoryName = '',
+                         }: AddReceiptModalProps) {
     const [searchValue] = useState('');
-    const [categoryOptions] = useState(() =>
-        initialState.categories.map((category) => category.name)
+    const categories = useSelector((state: IState) => state.categories) || [];
+    const categoryOptions = useMemo(
+        () => categories.map((category) => category.name),
+        [categories]
     );
+
+    const isLoading = useSelector(
+        (state: IState) => state.isCreateReceiptLoading
+    );
+    const dispatch = useDispatch();
 
     const filteredCategories = useMemo(
         () =>
@@ -54,19 +64,29 @@ function AddReceiptModal({
         },
     });
 
-    const handleSubmit = () => {
-        console.log({
-            ...form.values,
-            category: form.values.category || categoryName,
-        });
-        form.reset();
+    const handleCreate = () => {
         onClose();
+        dispatch(getCategories());
+    };
+
+    const handleSubmit = () => {
+        dispatch(
+            createReceipt(
+                form.values.title,
+                form.values.amount,
+                form.values.category || categoryName,
+                form.values.date,
+                handleCreate
+            )
+        );
+        form.reset();
     };
 
     if (!opened) return null;
 
     return (
         <Modal
+            isLoading={isLoading}
             title={`Добавить чек${categoryName ? ` в ${categoryName}` : ''}`}
             isOpen={opened}
             saveText="Добавить"
