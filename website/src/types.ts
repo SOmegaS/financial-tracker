@@ -19,7 +19,7 @@ export interface IReceipt {
     id: string;
     name: string;
     sum: number;
-    date: Date;
+    date: string;
 }
 
 export interface IState {
@@ -40,7 +40,7 @@ export type Action =
     | { type: typeof SET_ERROR; payload: string }
     | { type: typeof SET_CREATE_RECEIPT_LOADING; payload: boolean }
     | {
-    type: typeof SET_CATEGORIES;
-    payload: ICategory[];
-}
+          type: typeof SET_CATEGORIES;
+          payload: ICategory[];
+      }
     | { type: typeof SET_RECEIPTS; payload: IReceipt[] };
