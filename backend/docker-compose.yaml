@@ -93,6 +93,7 @@ services:
       -c hot_standby_feedback=on
     volumes:
       - ./sql/init-primary.sql:/docker-entrypoint-initdb.d/init-primary.sql
+      - ./primary-db:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
