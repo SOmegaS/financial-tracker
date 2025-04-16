@@ -1,4 +1,6 @@
 # [SCRUM отчет](https://docs.google.com/document/d/12m2VjNUMp3n863Z9HggvI9V1VDeuy3hqNhIG7fsSjnA/edit?usp=sharing)
+# [IDR отчет](IDR.pdf)
+
 
 # Функциональные требования к проекту "Трекер финансов Монетка"
 
