@@ -5,7 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IState } from '../../types.ts';
-import {getBills} from "../../services/actions/get-biils.ts";
+import { getBills } from '../../services/actions/get-biils.ts';
 
 function CategoryPage() {
     const { name } = useParams();
@@ -25,13 +25,7 @@ function CategoryPage() {
             <Table.Td>
                 <Text fw={500}>{receipt.name}</Text>
             </Table.Td>
-            <Table.Td>
-                {receipt.date.toLocaleDateString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                })}
-            </Table.Td>
+            <Table.Td>{receipt.date}</Table.Td>
             <Table.Td className={style.sum}>
                 <Badge
                     size="lg"

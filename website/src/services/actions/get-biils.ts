@@ -19,7 +19,14 @@ export const getBills = (category: string) => {
                     id: bill.name,
                     name: bill.name,
                     sum: bill.amount,
-                    date: new Date(bill.ts.seconds * 1000),
+                    date: new Date(bill.ts.seconds * 1000).toLocaleDateString(
+                        'ru-RU',
+                        {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                        }
+                    ),
                 })),
             });
         } catch (error) {
