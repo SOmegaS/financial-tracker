@@ -1,0 +1,55 @@
+@startuml
+actor UI
+participant Envoy
+participant Traefik
+participant "ExpenseReader(Go)"
+participant "ExpensePublisher(Go)"
+queue Kafka
+participant "ExpenseWriter(Java)"
+participant "UserService(Go)"
+database "postgres-primary"
+database "postgres-replica"
+database "postgres-users"
+== Register ==
+autonumber 1
+UI -> Envoy: Register (username, password)
+Envoy -> Traefik
+Traefik -> "UserService(Go)"
+"UserService(Go)" -> "postgres-users": Insert (username, password_hash, userId)
+"UserService(Go)" -> Traefik: JWT
+Traefik -> Envoy
+Envoy -> UI
+== Login ==
+autonumber 1
+UI -> Envoy: Login (username, password)
+Envoy -> Traefik
+Traefik -> "UserService(Go)"
+"UserService(Go)" -> "postgres-users": Select (password, user_id)
+"UserService(Go)" -> Traefik: JWT
+Traefik -> Envoy
+Envoy -> UI
+autonumber 1
+== CreateExpense - создание траты ==
+UI -> Envoy: CreateExpense (amount, category, jwt, name, timestamp)
+Envoy -> Traefik
+Traefik -> "ExpensePublisher(Go)"
+"ExpensePublisher(Go)" -> Kafka: writeExpense
+autonumber stop
+"ExpenseWriter(Java)" -> Kafka: Read data
+"ExpenseWriter(Java)" -> "postgres-primary": Insert (id, amount, category, timestamp)
+autonumber resume
+"ExpensePublisher(Go)" -> Traefik: "created"
+Traefik -> Envoy
+Envoy -> UI
+autonumber 1
+== Read - чтение трат (2 типа) ==
+UI -> Envoy: Read (jwt)
+Envoy -> Traefik
+Traefik -> "ExpenseReader(Go)"
+"ExpenseReader(Go)" -> "postgres-replica": Select
+"ExpenseReader(Go)" -> Traefik:
+Traefik -> Envoy
+Envoy -> UI
+autonumber stop
+"postgres-replica" <-> "postgres-primary": Replicate
+@enduml
