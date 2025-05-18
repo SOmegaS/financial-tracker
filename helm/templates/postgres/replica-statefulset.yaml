@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-postgres-replica
+  labels:
+    app.kubernetes.io/component: postgres-replica
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}-postgres-replica
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: postgres-replica
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: postgres-replica
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - name: init-replica
+        image: postgres:latest
+        command:
+        - bash
+        - -c
+        - |
+          until pg_basebackup -h {{ .Release.Name }}-postgres-primary -U replicator -D /var/lib/postgresql/data -R --slot=replication_slot; do
+            echo "Waiting for primary to connect..."
+            sleep 1
+          done
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-postgres-secrets
+              key: replicator-password
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      containers:
+      - name: postgres
+        image: postgres:latest
+        env:
+        - name: POSTGRES_USER
+          value: "replicator"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-postgres-secrets
+              key: replicator-password
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        command:
+        - postgres
+        - -c
+        - hot_standby=on
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U replicator
+          initialDelaySeconds: 30
+          periodSeconds: 10
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.postgres.replica.storage | default "1Gi" }}

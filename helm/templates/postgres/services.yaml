@@ -1,0 +1,41 @@
+# Primary Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres-primary
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app.kubernetes.io/component: postgres-primary
+    app.kubernetes.io/instance: {{ .Release.Name }}
+
+# Replica Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres-replica
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app.kubernetes.io/component: postgres-replica
+    app.kubernetes.io/instance: {{ .Release.Name }}
+
+# Users Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres-users
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app.kubernetes.io/component: postgres-users
+    app.kubernetes.io/instance: {{ .Release.Name }}

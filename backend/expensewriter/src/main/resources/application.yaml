@@ -1,7 +1,7 @@
 app:
   kafka:
     target-topic: writeBills
-    server: kafka-moscow:9092
+    server: financial-tracker-kafka:9092
 spring:
   flyway:
     enabled: false

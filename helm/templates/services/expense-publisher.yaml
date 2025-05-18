@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-expense-publisher
+  labels:
+    app.kubernetes.io/component: expense-publisher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: expense-publisher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: expense-publisher
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: http
+        traefik.ingress.kubernetes.io/router.rule: Headers(`target`, `expense-publisher`)
+    spec:
+      containers:
+      - name: expense-publisher
+        image: {{ .Values.services.expensePublisherImage }}
+        env:
+        - name: TOPIC_NAME
+          value: "writeBills"
+        - name: KAFKA_HOST_PORT
+          value: {{ .Release.Name }}-kafka:9092
+        ports:
+        - containerPort: 7777
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7777
+          initialDelaySeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-expense-publisher
+spec:
+  ports:
+  - port: 7777
+    targetPort: 7777
+  selector:
+    app.kubernetes.io/component: expense-publisher

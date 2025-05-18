@@ -1,0 +1,32 @@
+traefik:
+  image: traefik:v3.3
+  serviceType: LoadBalancer
+
+kafka:
+  image: confluentinc/cp-kafka:latest
+  storage: 1Gi
+
+postgres:
+  primary:
+    user: "ivang"
+    password: "ivang"
+    database: "db"
+    storage: "1Gi"
+  replica:
+    password: "replicator_password"
+    storage: "1Gi"
+  users:
+    user: "ivang"
+    password: "ivang"
+    database: "db"
+    storage: "1Gi"
+
+services:
+  expenseReaderImage: "harbor.devops-teta.ru/financial-tracker/expensereader"
+  expensePublisherImage: "harbor.devops-teta.ru/financial-tracker/expensepublisher"
+  userServiceImage: "harbor.devops-teta.ru/financial-tracker/userservice"
+  expenseWriterImage: "harbor.devops-teta.ru/financial-tracker/expensewriter"
+
+envoy:
+  image: "harbor.devops-teta.ru/financial-tracker/envoy"
+  configFile: "../backend/envoy/envoy.yaml"
