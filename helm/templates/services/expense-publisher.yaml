@@ -5,6 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/component: expense-publisher
 spec:
+  revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:
@@ -13,12 +14,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/component: expense-publisher
-      annotations:
-        traefik.ingress.kubernetes.io/router.entrypoints: http
-        traefik.ingress.kubernetes.io/router.rule: Headers(`target`, `expense-publisher`)
     spec:
       containers:
       - name: expense-publisher
+        imagePullPolicy: IfNotPresent
         image: {{ .Values.services.expensePublisherImage }}
         env:
         - name: TOPIC_NAME
@@ -28,10 +27,11 @@ spec:
         ports:
         - containerPort: 7777
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 7777
-          initialDelaySeconds: 15
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
 ---
 apiVersion: v1
 kind: Service

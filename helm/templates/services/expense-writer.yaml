@@ -5,6 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/component: expense-writer
 spec:
+  revisionHistoryLimit: 0
   replicas: 1
   selector:
     matchLabels:
@@ -16,6 +17,7 @@ spec:
     spec:
       containers:
       - name: expense-writer
+        imagePullPolicy: Always
         image: {{ .Values.services.expenseWriterImage }}
         env:
         - name: MEMORY_LIMIT
@@ -30,11 +32,6 @@ spec:
           limits:
             memory: "1024Mi"
             cpu: "1"
-        livenessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8080
-          initialDelaySeconds: 40
 ---
 apiVersion: v1
 kind: Service

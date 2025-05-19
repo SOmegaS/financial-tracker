@@ -6,7 +6,7 @@ spring:
   flyway:
     enabled: false
   datasource:
-    url: jdbc:postgresql://postgres-db-primary:5432/db
+    url: jdbc:postgresql://financial-tracker-postgres-primary:5432/db
     username: ivang
     password: ivang
     driver-class-name: org.postgresql.Driver

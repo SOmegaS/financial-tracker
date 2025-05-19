@@ -11,7 +11,7 @@ spec:
   selector:
     app.kubernetes.io/component: postgres-primary
     app.kubernetes.io/instance: {{ .Release.Name }}
-
+---
 # Replica Service
 apiVersion: v1
 kind: Service
@@ -25,7 +25,7 @@ spec:
   selector:
     app.kubernetes.io/component: postgres-replica
     app.kubernetes.io/instance: {{ .Release.Name }}
-
+---
 # Users Service
 apiVersion: v1
 kind: Service

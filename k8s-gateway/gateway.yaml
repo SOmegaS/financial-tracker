@@ -1,0 +1,113 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  namespace: envoy
+  name: envoy-gateway-class
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  namespace: envoy
+  name: eg
+spec:
+  gatewayClassName: envoy-gateway-class
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: All
+      hostname: 127.0.0.1.nip.io
+      name: http
+      port: 1338
+      protocol: HTTP
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: cors
+  namespace: default
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+      name: expense-publisher
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+      name: user-service
+    - group: gateway.networking.k8s.io
+      kind: GRPCRoute
+      name: expense-reader
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: user-service
+  cors:
+    allowOrigins: ["*"]
+    allowMethods: ["*"]
+    allowHeaders: ["*"]
+    exposeHeaders: ["*"]
+    allowCredentials: true
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: expense-publisher
+  namespace: default
+spec:
+  parentRefs:
+    - name: eg
+      namespace: envoy
+  hostnames:
+    - "127.0.0.1.nip.io"
+  rules:
+    - matches:
+        - method:
+            method: CreateBill
+      backendRefs:
+        - name: financial-tracker-expense-publisher
+          namespace: default
+          port: 7777
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: user-service
+  namespace: default
+spec:
+  parentRefs:
+    - name: eg
+      namespace: envoy
+  hostnames:
+    - "127.0.0.1.nip.io"
+  rules:
+    - matches:
+        - method:
+            method: Login
+        - method:
+            method: Register
+      backendRefs:
+        - name: financial-tracker-user-service
+          namespace: default
+          port: 7777
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: expense-reader
+  namespace: default
+spec:
+  parentRefs:
+    - name: eg
+      namespace: envoy
+  hostnames:
+    - "127.0.0.1.nip.io"
+  rules:
+    - matches:
+        - method:
+            method: GetBills
+        - method:
+            method: GetReport
+      backendRefs:
+        - name: financial-tracker-expense-reader
+          namespace: default
+          port: 7777

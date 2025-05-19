@@ -20,6 +20,7 @@ spec:
     spec:
       containers:
       - name: postgres
+        imagePullPolicy: IfNotPresent
         image: postgres:latest
         env:
         - name: POSTGRES_USER
@@ -32,7 +33,7 @@ spec:
         - name: POSTGRES_DB
           value: {{ .Values.postgres.primary.database | quote }}
         - name: POSTGRES_HOST_AUTH_METHOD
-          value: "scram-sha-256"
+          value: "scram-sha-256\nhost replication all 0.0.0.0/0 md5"
         - name: POSTGRES_INITDB_ARGS
           value: "--auth-host=scram-sha-256"
         ports:

@@ -19,58 +19,76 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       initContainers:
-      - name: init-replica
-        image: postgres:latest
-        command:
-        - bash
-        - -c
-        - |
-          until pg_basebackup -h {{ .Release.Name }}-postgres-primary -U replicator -D /var/lib/postgresql/data -R --slot=replication_slot; do
-            echo "Waiting for primary to connect..."
-            sleep 1
-          done
-        env:
-        - name: PGPASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-postgres-secrets
-              key: replicator-password
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data
-      containers:
-      - name: postgres
-        image: postgres:latest
-        env:
-        - name: POSTGRES_USER
-          value: "replicator"
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-postgres-secrets
-              key: replicator-password
-        ports:
-        - containerPort: 5432
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data
-        command:
-        - postgres
-        - -c
-        - hot_standby=on
-        livenessProbe:
-          exec:
-            command:
-            - sh
+        - name: init-replica
+          image: postgres:latest
+          command:
+            - bash
             - -c
-            - pg_isready -U replicator
-          initialDelaySeconds: 30
-          periodSeconds: 10
+            - |
+              if [ ! -s "/var/lib/postgresql/data/PG_VERSION" ]; then
+                echo "Replica data not found, cloning from primary..."
+                rm -rf /var/lib/postgresql/data/*
+                until pg_basebackup -h {{ .Release.Name }}-postgres-primary -D /var/lib/postgresql/data -R --slot=replication_slot --write-recovery-conf; do
+                  echo "Waiting for primary to connect..."
+                  sleep 2
+                done
+              else
+                echo "Data already present, skipping base backup"
+              fi
+          env:
+            - name: PGUSER
+              value: replicator
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-secrets
+                  key: replicator-password
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      containers:
+        - name: postgres
+          imagePullPolicy: IfNotPresent
+          image: postgres:latest
+          env:
+            - name: POSTGRES_DATABASE
+              value: db
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.primary.user | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-secrets
+                  key: primary-password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          args:
+            - "-c"
+            - "hot_standby=on"
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U ivang -d db
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U ivang -d db
+            initialDelaySeconds: 5
+            periodSeconds: 5
   volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: {{ .Values.postgres.replica.storage | default "1Gi" }}
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.replica.storage | default "1Gi" }}
