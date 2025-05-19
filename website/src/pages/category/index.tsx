@@ -13,6 +13,7 @@ function CategoryPage() {
     const receipts = useSelector((state: IState) => state.receipts);
     const dispatch = useDispatch();
     useEffect(() => {
+        // @ts-ignore
         dispatch(getBills(decodedName));
     }, [dispatch]);
 

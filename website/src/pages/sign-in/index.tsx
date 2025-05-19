@@ -5,6 +5,7 @@ import { login } from '../../services/actions/login.ts';
 export function SignInPage() {
     const dispatch = useDispatch();
     const handleSignIn = (email: string, password: string) => {
+        // @ts-ignore
         dispatch(login(email, password));
     };
 

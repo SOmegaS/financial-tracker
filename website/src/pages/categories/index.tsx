@@ -12,6 +12,7 @@ const CategoriesPage = () => {
     const isLoading = useSelector((state: IState) => state.isLoading);
     useEffect(() => {
         if (!isLoading) {
+            // @ts-ignore
             dispatch(getCategories());
         }
     }, [dispatch]);

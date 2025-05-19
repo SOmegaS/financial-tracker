@@ -2,7 +2,7 @@ import { api } from "../proto/generated/common"
 import { google }from "../proto/generated/google/protobuf/timestamp"
 
 class APIService {
-    private client = new api.ApiClient('http://localhost:1337')
+    private client = new api.ApiClient('http://127.0.0.1.nip.io:1338')
 
     private targets = {
         auth: "user-service",

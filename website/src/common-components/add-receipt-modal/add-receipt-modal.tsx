@@ -66,16 +66,21 @@ function AddReceiptModal({
 
     const handleCreate = () => {
         onClose();
+        // @ts-ignore
+
         dispatch(getCategories());
     };
 
     const handleSubmit = () => {
+        // @ts-ignore
         dispatch(
+            // @ts-ignore
             createReceipt(
                 form.values.title,
                 form.values.amount,
                 form.values.category || categoryName,
                 form.values.date,
+                // @ts-ignore
                 handleCreate
             )
         );

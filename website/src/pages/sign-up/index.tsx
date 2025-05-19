@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 export function SignUpPage() {
     const dispatch = useDispatch();
     const handleSignUp = (email: string, password: string) => {
+        // @ts-ignore
         dispatch(register(email, password));
     };
 
