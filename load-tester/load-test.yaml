@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-test
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      containers:
+      - name: load-tester
+        image: load-tester:latest
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Never

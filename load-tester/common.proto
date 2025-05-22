@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+
+package api;
+option go_package = "./api";
+
+message RegisterRequest {
+  string requestId = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message RegisterResponse {
+  string jwt = 1;
+}
+
+message LoginRequest {
+  string requestId = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message LoginResponse {
+  string jwt = 1;
+}
+
+message CreateBillMessage {
+  string name = 1;
+  double amount = 2;
+  string category = 3;
+  string user_id = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  string jwt = 6;
+}
+
+message GetReportRequest {
+  string jwt = 1;
+}
+
+message GetReportResponse {
+  map<string, double> report = 1;
+}
+
+message GetBillsRequest {
+  string jwt = 1;
+  string category = 2;
+}
+
+message Bill {
+  double amount = 1;
+  string name = 2;
+  google.protobuf.Timestamp ts = 3;
+}
+
+message GetBillsResponse {
+  repeated Bill bills = 1;
+}
+
+service Api  {
+  rpc Register (RegisterRequest) returns (RegisterResponse) {}
+  rpc Login (LoginRequest) returns (LoginResponse) {}
+  rpc CreateBill (CreateBillMessage) returns (google.protobuf.Empty) {}
+  rpc GetReport (GetReportRequest) returns (GetReportResponse) {}
+  rpc GetBills (GetBillsRequest) returns (GetBillsResponse) {}
+}
