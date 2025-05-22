@@ -28,14 +28,14 @@ type App struct {
 }
 
 func NewApp(dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
-	pubKeyData, err := os.ReadFile("secret/public.key")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read public key: %w", err)
-	}
-	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKeyData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse public key: %w", err)
-	}
+	pubKeyStr := os.Getenv("PUBLIC_KEY")
+    if pubKeyStr == "" {
+    	return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
+    }
+    publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
+    if err != nil {
+    	return nil, fmt.Errorf("failed to parse public key: %w", err)
+    }
 
 	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?&sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
 	dbConn, err := sql.Open("postgres", connStr)

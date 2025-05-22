@@ -24,6 +24,11 @@ spec:
           value: "writeBills"
         - name: KAFKA_HOST_PORT
           value: {{ .Release.Name }}-kafka:9092
+        - name: PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-jwt-secret
+              key: public-key
         ports:
         - containerPort: 7777
         livenessProbe:

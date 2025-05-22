@@ -1,7 +1,3 @@
-traefik:
-  image: traefik:v3.3
-  serviceType: LoadBalancer
-
 kafka:
   image: confluentinc/cp-kafka:latest
   storage: 1Gi

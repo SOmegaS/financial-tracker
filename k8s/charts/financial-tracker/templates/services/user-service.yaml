@@ -32,6 +32,17 @@ spec:
               key: users-password
         - name: DB_NAME
           value: {{ .Values.postgres.users.database | quote }}
+        - name: PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-jwt-secret
+              key: public-key
+        - name: PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-jwt-secret
+              key: private-key
+
         ports:
         - containerPort: 7777
         livenessProbe:

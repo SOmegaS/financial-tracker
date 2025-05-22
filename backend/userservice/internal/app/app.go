@@ -53,27 +53,26 @@ func (a *App) Init() error {
 	}
 	a.queries = database.New(a.db)
 
-	// Загрузка приватного ключа
-	privKeyData, err := os.ReadFile("secret/private.key")
-	if err != nil {
-		return fmt.Errorf("failed to read private key: %w", err)
-	}
-	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privKeyData)
-	if err != nil {
-		return fmt.Errorf("failed to parse private key: %w", err)
-	}
-	a.privateKey = privateKey
+	privKeyStr := os.Getenv("PRIVATE_KEY")
+    if privKeyStr == "" {
+    	return fmt.Errorf("PRIVATE_KEY environment variable is not set")
+    }
+    privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyStr))
+    	if err != nil {
+    		return fmt.Errorf("failed to parse private key: %w", err)
+    }
+    a.privateKey = privateKey
 
-	// Загрузка публичного ключа
-	pubKeyData, err := os.ReadFile("secret/public.key")
-	if err != nil {
-		return fmt.Errorf("failed to read public key: %w", err)
-	}
-	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKeyData)
-	if err != nil {
-		return fmt.Errorf("failed to parse public key: %w", err)
-	}
-	a.publicKey = publicKey
+    // Загрузка публичного ключа из переменной окружения
+    pubKeyStr := os.Getenv("PUBLIC_KEY")
+    if pubKeyStr == "" {
+    	return fmt.Errorf("PUBLIC_KEY environment variable is not set")
+    }
+    publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
+    if err != nil {
+    	return fmt.Errorf("failed to parse public key: %w", err)
+    }
+    a.publicKey = publicKey
 
 	return nil
 }

@@ -33,6 +33,11 @@ spec:
               key: primary-password
         - name: DB_NAME
           value: {{ .Values.postgres.primary.database | quote }}
+        - name: PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-jwt-secret
+              key: public-key
         ports:
         - containerPort: 7777
         livenessProbe:

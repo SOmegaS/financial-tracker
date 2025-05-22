@@ -78,22 +78,10 @@
 
 # Запуск проекта
 
-## Backend
-
-- Перейти в папку backend
-- Выполнить:
-```bash
-docker compose up -d 
-```
-- Убедиться, что все контейнеры подняты
-
-## Frontend
-- перейти в папку frontend
-```bash
-npm install
-npm run dev
-```
-- зайти на сайт по адресу в логах
+1. Скачать minikube
+2. minikube start
+3. установить helm чарты из папки helm
+4. 
 
 ### Backend.Troubleshooting
 

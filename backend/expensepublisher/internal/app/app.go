@@ -27,14 +27,14 @@ type App struct {
 }
 
 func NewApp(kafkaHostPort, topicName string) (*App, error) {
-	pubKeyData, err := os.ReadFile("secret/public.key")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read public key: %w", err)
-	}
-	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKeyData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse public key: %w", err)
-	}
+	pubKeyStr := os.Getenv("PUBLIC_KEY")
+    if pubKeyStr == "" {
+    	return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
+    }
+    publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
+    if err != nil {
+    	return nil, fmt.Errorf("failed to parse public key: %w", err)
+    }
 
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(kafkaHostPort),
