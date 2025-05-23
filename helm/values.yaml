@@ -7,7 +7,7 @@ kafka:
   storage: 1Gi
 
 loadTester:
-  image: load-tester:latest
+  image: harbor.devops-teta.ru/financial-tracker/load-tester:arm
 
 postgres:
   primary:
