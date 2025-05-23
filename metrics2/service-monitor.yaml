@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubelet-cadvisor
+  namespace: monitoring
+  labels:
+    release: prometheus-operator
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kubelet
+  namespaceSelector:
+    any: true
+  endpoints:
+    - port: https-metrics
+      path: /metrics/cadvisor
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+      interval: 15s

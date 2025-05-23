@@ -1,0 +1,56 @@
+metricsServer:
+  namespace: kube-system
+  image:
+    repository: k8s.gcr.io/metrics-server/metrics-server
+    tag: v0.7.1
+    pullPolicy: IfNotPresent
+  port: 8443
+  resources: {}
+
+podMonitor:
+  enabled: true
+  namespace: monitoring
+  releaseLabel: prometheus-operator
+  scrapeInterval: 15s
+
+# Основная секция для установки kube-prometheus-stack
+kube-prometheus-stack:
+  # Namespace для всех компонентов (Prometheus, Grafana и т.д.)
+  namespace: monitoring
+
+  # Конфигурация Prometheus
+  prometheus:
+    prometheusSpec:
+      # Задаём время запуска не менее 60 секунд
+      maximumStartupDurationSeconds: 300
+      # Разрешаем подтягивать все ServiceMonitor/PodMonitor
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      # Фильтрация по меткам (опционально)
+      serviceMonitorSelector:
+        matchLabels:
+          release: prometheus-operator
+      podMonitorSelector:
+        matchLabels:
+          release: prometheus-operator
+
+  # Конфигурация Grafana
+  grafana:
+    enabled: true
+    defaultDashboardsEnabled: true
+
+  # Настройки Prometheus Node Exporter для устранения конфликта портов
+  prometheus-node-exporter:
+    # Отключаем привязку к сети хоста
+    hostNetwork: false
+    # Отключаем hostPort, чтобы контейнер не занимал порты хоста
+    hostPort:
+      enabled: false
+    # Корректируем ресурсы при необходимости
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi

@@ -9,14 +9,15 @@ import (
 	"os"
 	"time"
 
+	"user-service/internal/database"
+	"user-service/metrics"
+	"user-service/pkg/api"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"user-service/internal/database"
-	"user-service/pkg/api"
 )
 
 const expirationTime = time.Hour
@@ -78,11 +79,6 @@ func (a *App) Init() error {
 	return nil
 }
 
-// Run запускает приложение
-func (a *App) Run() {
-	fmt.Println("Приложение запущено.")
-}
-
 // CreateSession создает JWT-токен сессии
 func (a *App) CreateSession(id, userId string) (string, error) {
 	claims := jwt.MapClaims{
@@ -96,17 +92,25 @@ func (a *App) CreateSession(id, userId string) (string, error) {
 
 // Register обрабатывает регистрацию нового пользователя
 func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.RegisterResponse, error) {
+	const method = "Register"
+	start := time.Now()
+	metrics.GRPCRequestsTotal.WithLabelValues(method).Inc()
+	defer metrics.GRPCDurationSeconds.WithLabelValues(method).Observe(time.Since(start).Seconds())
+
 	if len(req.Password) < 9 {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.InvalidArgument, "password must be longer than 8 characters")
 	}
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %v", err)
 	}
 
 	userId, err := uuid.NewUUID()
 	if err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.Internal, "failed to generate UUID")
 	}
 
@@ -116,39 +120,49 @@ func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.Regi
 		Username: req.GetUsername(),
 	})
 	if err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
 
-	jwt, err := a.CreateSession(req.RequestId, userId.String())
+	jwtToken, err := a.CreateSession(req.RequestId, userId.String())
 	if err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.Internal, "failed to create session: %v", err)
 	}
 
 	return &api.RegisterResponse{
-		Jwt: jwt,
+		Jwt: jwtToken,
 	}, nil
 }
 
 // Login обрабатывает авторизацию пользователя
 func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginResponse, error) {
+	const method = "Login"
+	start := time.Now()
+	metrics.GRPCRequestsTotal.WithLabelValues(method).Inc()
+	defer metrics.GRPCDurationSeconds.WithLabelValues(method).Observe(time.Since(start).Seconds())
+
 	userInfo, err := a.queries.GetUserIdPassword(ctx, req.GetUsername())
 	if err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(userInfo.Password), []byte(req.Password)); err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid credentials")
 		}
 		return nil, status.Errorf(codes.Internal, "password comparison failed: %v", err)
 	}
 
-	jwt, err := a.CreateSession(req.RequestId, userInfo.ID.String())
+	jwtToken, err := a.CreateSession(req.RequestId, userInfo.ID.String())
 	if err != nil {
+		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
 		return nil, status.Errorf(codes.Internal, "failed to create session: %v", err)
 	}
 
 	return &api.LoginResponse{
-		Jwt: jwt,
+		Jwt: jwtToken,
 	}, nil
 }

@@ -26,6 +26,7 @@ spec:
           value: {{ .Release.Name }}-kafka:9092
         ports:
         - containerPort: 7777
+        - containerPort: 2112
         livenessProbe:
           tcpSocket:
             port: 7777
@@ -36,10 +37,38 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-expense-publisher
+  name: {{ .Release.Name }}-expense-publisher-service
+  labels:
+    app.kubernetes.io/component: expense-publisher-service
 spec:
   ports:
-  - port: 7777
+  - name: service
+    port: 7777
     targetPort: 7777
+  - name: metrics
+    port: 2112
+    targetPort: 2112
   selector:
     app.kubernetes.io/component: expense-publisher
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-sm
+  labels:
+    serviceMonitorSelector: prometheus
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: expense-publisher-service
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      path: /metrics
+      scrapeTimeout: 10s
+

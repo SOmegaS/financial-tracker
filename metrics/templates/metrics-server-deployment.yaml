@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.metricsServer.namespace }}
+  labels:
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: metrics-server
+        image: {{ .Values.metricsServer.image.repository }}:{{ .Values.metricsServer.image.tag }}
+        imagePullPolicy: {{ .Values.metricsServer.image.pullPolicy }}
+        args:
+        - --cert-dir=/tmp
+        - --secure-port={{ .Values.metricsServer.port }}
+        - --kubelet-insecure-tls
+        - --kubelet-preferred-address-types=InternalIP
+        ports:
+        - name: https
+          containerPort: {{ .Values.metricsServer.port }}
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.metricsServer.resources | nindent 10 }}

@@ -10,6 +10,6 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
 
-EXPOSE 7777
+EXPOSE 7777 2114
 
 CMD ["./main"]

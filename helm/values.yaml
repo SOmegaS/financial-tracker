@@ -7,7 +7,7 @@ kafka:
   storage: 1Gi
 
 loadTester:
-  image: load-tester:latest
+  image: "harbor.devops-teta.ru/financial-tracker/load-tester:beta"
 
 postgres:
   primary:
@@ -24,8 +24,21 @@ postgres:
     database: "db"
     storage: "1Gi"
 
+# prometheus:
+#   prometheusSpec:
+#     maximumStartupDurationSeconds: 120
+#   replicas: 1
+#   resources:
+#     limits:
+#       cpu: 1
+#       memory: 1Gi
+#     requests:
+#       cpu: 1
+#       memory: 1Gi
+
 services:
   expenseReaderImage: "harbor.devops-teta.ru/financial-tracker/expensereader:arm"
-  expensePublisherImage: "harbor.devops-teta.ru/financial-tracker/expensepublisher:arm"
+  expensePublisherImage: "harbor.devops-teta.ru/financial-tracker/expensepublisher:test2"
   userServiceImage: "harbor.devops-teta.ru/financial-tracker/userservice:arm"
   expenseWriterImage: "harbor.devops-teta.ru/financial-tracker/expensewriter:arm"
+

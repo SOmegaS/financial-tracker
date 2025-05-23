@@ -1,0 +1,28 @@
+{{- if .Values.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ .Chart.Name }}
+  namespace: {{ .Values.podMonitor.namespace }}
+  labels:
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    release: {{ .Values.podMonitor.releaseLabel }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  namespaceSelector:
+    matchNames:
+    - {{ .Values.metricsServer.namespace }}
+  podMetricsEndpoints:
+  - port: https
+    scheme: https
+    path: /metrics
+    targetPort: {{ .Values.metricsServer.port }}
+    tlsConfig:
+      insecureSkipVerify: true
+    interval: {{ .Values.podMonitor.scrapeInterval }}
+{{- end }}

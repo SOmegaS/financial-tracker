@@ -1,0 +1,28 @@
+# values-kube-prom-stack.yaml
+
+# 1) Увеличим maximumStartupDurationSeconds
+prometheus:
+  prometheusSpec:
+    # минимальное допустимое значение — 60
+    maximumStartupDurationSeconds: 120
+    # выбираем ServiceMonitor’ы по лейблу вашего приложения:
+    serviceMonitorSelector:
+      matchLabels:
+        serviceMonitorSelector: prometheus
+    serviceMonitorNamespaceSelector:
+      matchNames:
+      - monitoring
+
+# 2) Включим и настроим Grafana (ClusterIP, без ingress)
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: prom-operator
+  service:
+    type: ClusterIP
+
+# 3) Оставим все прочие дефолтные CRD и node-exporter
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
