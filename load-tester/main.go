@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,6 +32,13 @@ type endpointMetrics struct {
 	latency      prometheus.Histogram
 }
 
+// totalMetrics tracks overall performance
+type totalMetrics struct {
+	successCount uint64
+	failureCount uint64
+	totalLatency time.Duration
+}
+
 // metrics tracks overall load test performance
 type metrics struct {
 	register   endpointMetrics
@@ -40,11 +46,7 @@ type metrics struct {
 	createBill endpointMetrics
 	getReport  endpointMetrics
 	getBills   endpointMetrics
-	total      struct {
-		successCount uint64
-		failureCount uint64
-		totalLatency time.Duration
-	}
+	total      totalMetrics
 }
 
 var (
@@ -125,6 +127,11 @@ var (
 				Buckets: prometheus.DefBuckets,
 			}),
 		},
+		total: totalMetrics{
+			0,
+			0,
+			time.Duration(0),
+		},
 	}
 )
 
@@ -187,10 +194,7 @@ func main() {
 		wg.Add(1)
 		go func(userID int) {
 			defer wg.Done()
-			userMetrics := runUserOperations(userClient, publisherClient, readerClient, userID)
-			atomic.AddUint64(&m.total.successCount, userMetrics.total.successCount)
-			atomic.AddUint64(&m.total.failureCount, userMetrics.total.failureCount)
-			atomic.AddInt64((*int64)(&m.total.totalLatency), int64(userMetrics.total.totalLatency))
+			runUserOperations(userClient, publisherClient, readerClient, userID)
 		}(i)
 	}
 
@@ -204,19 +208,14 @@ func main() {
 		avgLatency = time.Duration(int64(m.total.totalLatency) / int64(m.total.successCount))
 	}
 	log.Printf("Load test completed in %v", duration)
+	log.Printf("Data published to Prometheus")
 	log.Printf("Total requests: %d", m.total.successCount+m.total.failureCount)
 	log.Printf("Successes: %d", m.total.successCount)
 	log.Printf("Failures: %d", m.total.failureCount)
 	log.Printf("Average latency per request: %v", avgLatency)
-	log.Printf("Register success: %d, failure: %d", m.register.successCount, m.register.failureCount)
-	log.Printf("Login success: %d, failure: %d", m.login.successCount, m.login.failureCount)
-	log.Printf("CreateBill success: %d, failure: %d", m.createBill.successCount, m.createBill.failureCount)
-	log.Printf("GetReport success: %d, failure: %d", m.getReport.successCount, m.getReport.failureCount)
-	log.Printf("GetBills success: %d, failure: %d", m.getBills.successCount, m.getBills.failureCount)
 }
 
-func runUserOperations(userClient, publisherClient, readerClient api.ApiClient, userID int) metrics {
-	var m metrics
+func runUserOperations(userClient, publisherClient, readerClient api.ApiClient, userID int) {
 	username := fmt.Sprintf("user%d", userID)
 	password := "password123"
 	requestID := fmt.Sprintf("req-%d-%d", userID, time.Now().UnixNano())
@@ -224,38 +223,39 @@ func runUserOperations(userClient, publisherClient, readerClient api.ApiClient, 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Register (user service)
+	// Login (user service)
 	start := time.Now()
-	_, err := userClient.Register(ctx, &api.RegisterRequest{
+	loginResp, err := userClient.Login(ctx, &api.LoginRequest{
 		RequestId: requestID,
 		Username:  username,
 		Password:  password,
 	})
 	latency := time.Since(start)
 	if err != nil {
-		log.Printf("User %d Register failed: %v", userID, err)
-		m.register.failureCount.Inc()
-		m.total.failureCount++
-	} else {
-		m.register.successCount.Inc()
-		m.register.latency.Observe(latency.Seconds())
-		m.total.successCount++
-		m.total.totalLatency += latency
-	}
-
-	// Login (user service)
-	start = time.Now()
-	loginResp, err := userClient.Login(ctx, &api.LoginRequest{
-		RequestId: requestID,
-		Username:  username,
-		Password:  password,
-	})
-	latency = time.Since(start)
-	if err != nil {
 		log.Printf("User %d Login failed: %v", userID, err)
 		m.login.failureCount.Inc()
 		m.total.failureCount++
-		return m // Stop if login fails
+		log.Printf("Attempting to register user %d", userID)
+		regstart := time.Now()
+		_, err := userClient.Register(ctx, &api.RegisterRequest{
+			RequestId: requestID,
+			Username:  username,
+			Password:  password,
+		})
+		latency := time.Since(regstart)
+		if err != nil {
+			log.Printf("User %d Register failed: %v", userID, err)
+			m.register.failureCount.Inc()
+			m.total.failureCount++
+			return
+		} else {
+			m.register.successCount.Inc()
+			m.register.latency.Observe(latency.Seconds())
+			m.total.successCount++
+			m.total.totalLatency += latency
+		}
+		log.Printf("User %d registered successfully, will login in next job", userID)
+		return
 	}
 	m.login.successCount.Inc()
 	m.login.latency.Observe(latency.Seconds())
@@ -320,6 +320,4 @@ func runUserOperations(userClient, publisherClient, readerClient api.ApiClient, 
 			m.total.totalLatency += latency
 		}
 	}
-
-	return m
 }
