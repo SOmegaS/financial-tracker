@@ -213,11 +213,6 @@ func main() {
 	log.Printf("CreateBill success: %d, failure: %d", m.createBill.successCount, m.createBill.failureCount)
 	log.Printf("GetReport success: %d, failure: %d", m.getReport.successCount, m.getReport.failureCount)
 	log.Printf("GetBills success: %d, failure: %d", m.getBills.successCount, m.getBills.failureCount)
-	log.Printf("Average latency for Register: %v", m.register.latency.Collect())
-	log.Printf("Average latency for Login: %v", m.login.latency.Collect())
-	log.Printf("Average latency for CreateBill: %v", m.createBill.latency.Collect())
-	log.Printf("Average latency for GetReport: %v", m.getReport.latency.Collect())
-	log.Printf("Average latency for GetBills: %v", m.getBills.latency.Collect())
 }
 
 func runUserOperations(userClient, publisherClient, readerClient api.ApiClient, userID int) metrics {
