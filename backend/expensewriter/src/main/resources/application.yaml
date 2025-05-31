@@ -3,6 +3,9 @@ app:
     target-topic: writeBills
     server: financial-tracker-kafka:9092
 spring:
+  metrics:
+    tags:
+      application: expense-writer
   flyway:
     enabled: false
   datasource:
@@ -30,8 +33,3 @@ management:
   endpoint:
     prometheus:
       enabled: true
-
-spring:
-  metrics:
-    tags:
-      application: expense-writer
