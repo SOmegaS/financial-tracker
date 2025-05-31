@@ -1,0 +1,29 @@
+# apiVersion: monitoring.coreos.com/v1
+# kind: Prometheus
+# metadata:
+#   name: prometheus
+#   namespace: monitoring
+# spec:
+#   baseImage: quay.io/prometheus/prometheus
+#   logLevel: info
+#   retention: 12h
+#   serviceAccountName: prometheus-service-account
+#   serviceMonitorNamespaceSelector:
+#     matchNames:
+#       - monitoring
+#   serviceMonitorSelector:
+#     matchLabels:
+#       serviceMonitorSelector: prometheus
+#   storage:
+#     volumeClaimTemplate:
+#       apiVersion: v1
+#       kind: PersistentVolumeClaim
+#       metadata:
+#         name: prometheus-pvc
+#       spec:
+#         accessModes:
+#         - ReadWriteOnce
+#         resources:
+#           requests:
+#             storage: 10Gi
+#   version: v2.10.0

@@ -10,6 +10,9 @@ import (
 	"math"
 	"os"
 	"strings"
+	
+	"time"
+	"expensepublisher/metrics"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -69,35 +72,44 @@ func validateCreateBillMessage(msg *api.BillMessage) error {
 }
 
 func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Empty, error) {
+	start := time.Now()
+	metrics.RequestsTotal.WithLabelValues("CreateBill").Inc()
+	defer metrics.RequestDuration.WithLabelValues("CreateBill").Observe(time.Since(start).Seconds())
 
 	token, err := jwt.Parse(msg.Jwt, func(token *jwt.Token) (interface{}, error) {
 		return a.publicKey, nil
 	})
 	if err != nil {
+		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
 		return nil, status.Errorf(codes.Unauthenticated, "parse token error: %v", err)
 	}
 
 	if token.Claims.Valid() != nil {
+		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
 	if err != nil {
+		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
+
 	log.Printf("Принят rpc запрос от пользователя с id = %v", id)
 
 	if err := validateCreateBillMessage(msg); err != nil {
+		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)
 	}
 
 	err = a.publishMessage(ctx, id, msg)
 	if err != nil {
+		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
 		return nil, status.Errorf(codes.Internal, "internal error: %v", err)
 	}
+
 	return &emptypb.Empty{}, nil
 }
-
 func (a *App) publishMessage(ctx context.Context, userId uuid.UUID, msg *api.BillMessage) error {
 	writeMessage := &api.CreateBillMessage{
 		Name:      msg.Name,

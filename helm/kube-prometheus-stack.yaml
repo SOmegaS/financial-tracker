@@ -1,0 +1,28 @@
+# kube-prometheus-stack.yaml
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchExpressions:
+        - key: app.kubernetes.io/component
+          operator: In
+          values:
+            - expense-publisher-service
+            - expense-reader
+            - user-service
+            - load-tester
+    maximumStartupDurationSeconds: 120
+
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: prom-operator
+  service:
+    type: ClusterIP
+
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
