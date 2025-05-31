@@ -18,7 +18,7 @@ func main() {
 	topicName := os.Getenv("TOPIC_NAME")
 
 	metrics.InitMetrics()
-
+	metrics.RequestsTotal.WithLabelValues("CreateBill").Inc()
 	a, err := app.NewApp(kafkaHostPort, topicName)
 	if err != nil {
 		log.Fatal(err)

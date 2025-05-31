@@ -1,19 +1,20 @@
-# values-kube-prom-stack.yaml
+# kube-prometheus-stack.yaml
 
-# 1) Увеличим maximumStartupDurationSeconds
 prometheus:
   prometheusSpec:
-    # минимальное допустимое значение — 60
-    maximumStartupDurationSeconds: 120
-    # выбираем ServiceMonitor’ы по лейблу вашего приложения:
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector:
-      matchLabels:
-        serviceMonitorSelector: prometheus
-    serviceMonitorNamespaceSelector:
-      matchNames:
-      - monitoring
+      matchExpressions:
+        - key: app.kubernetes.io/component
+          operator: In
+          values:
+            - expense-publisher-service
+            - expense-reader
+            - user-service
+            - load-tester
+    maximumStartupDurationSeconds: 120
 
-# 2) Включим и настроим Grafana (ClusterIP, без ingress)
 grafana:
   enabled: true
   adminUser: admin
@@ -21,7 +22,6 @@ grafana:
   service:
     type: ClusterIP
 
-# 3) Оставим все прочие дефолтные CRD и node-exporter
 kubeStateMetrics:
   enabled: true
 nodeExporter:

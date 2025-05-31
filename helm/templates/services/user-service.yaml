@@ -19,21 +19,24 @@ spec:
       - name: user-service
         image: {{ .Values.services.userServiceImage }}
         env:
-        - name: DB_HOST
-          value: {{ .Release.Name }}-postgres-users
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_USER
-          value: {{ .Values.postgres.users.user | quote }}
-        - name: DB_PASS
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-postgres-secrets
-              key: users-password
-        - name: DB_NAME
-          value: {{ .Values.postgres.users.database | quote }}
+          - name: DB_HOST
+            value: {{ .Release.Name }}-postgres-users
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_USER
+            value: {{ .Values.postgres.users.user | quote }}
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }}-postgres-secrets
+                key: users-password
+          - name: DB_NAME
+            value: {{ .Values.postgres.users.database | quote }}
         ports:
-        - containerPort: 7777
+          - name: grpc
+            containerPort: 7777
+          - name: metrics
+            containerPort: 2114   # порт для /metrics
         livenessProbe:
           tcpSocket:
             port: 7777
@@ -45,9 +48,36 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Release.Name }}-user-service
+  labels:
+    app.kubernetes.io/component: user-service
 spec:
-  ports:
-  - port: 7777
-    targetPort: 7777
   selector:
     app.kubernetes.io/component: user-service
+  ports:
+    - name: grpc
+      port: 7777
+      targetPort: grpc
+    - name: metrics
+      port: 2114
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-user-service-sm
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: user-service
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: user-service
+  namespaceSelector:
+    matchNames:
+      - default      # namespace, где живёт user-service
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+

@@ -31,4 +31,13 @@ var (
 
 func Init() {
 	prometheus.MustRegister(GRPCRequestsTotal, GRPCErrorsTotal, GRPCDurationSeconds)
+
+	// Резервируем серии для методов, чтобы даже при нулевом трафике они отдавались со значением 0
+	GRPCRequestsTotal.WithLabelValues("GetReport")
+	GRPCErrorsTotal.WithLabelValues("GetReport")
+	GRPCDurationSeconds.WithLabelValues("GetReport")
+
+	GRPCRequestsTotal.WithLabelValues("GetBills")
+	GRPCErrorsTotal.WithLabelValues("GetBills")
+	GRPCDurationSeconds.WithLabelValues("GetBills")
 }

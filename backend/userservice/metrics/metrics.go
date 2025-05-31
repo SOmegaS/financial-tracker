@@ -31,4 +31,9 @@ var (
 
 func Init() {
 	prometheus.MustRegister(GRPCRequestsTotal, GRPCErrorsTotal, GRPCDurationSeconds)
+	for _, m := range []string{"Register", "Login"} {
+		GRPCRequestsTotal.WithLabelValues(m)
+		GRPCErrorsTotal.WithLabelValues(m)
+		GRPCDurationSeconds.WithLabelValues(m)
+	}
 }

@@ -55,20 +55,20 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ .Release.Name }}-sm
-  labels:
-    serviceMonitorSelector: prometheus
   namespace: monitoring
+  labels:
+    app.kubernetes.io/component: expense-publisher-service   
+    serviceMonitorSelector: expense-publisher-service
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/component: expense-publisher-service
   namespaceSelector:
     matchNames:
-      - {{ .Release.Namespace }}
+      - default
   endpoints:
     - port: metrics
       path: /metrics
       interval: 15s
-      path: /metrics
       scrapeTimeout: 10s
 

@@ -16,7 +16,7 @@ import (
 func main() {
 	// Инициализация метрик
 	metrics.Init()
-
+	metrics.GRPCRequestsTotal.WithLabelValues("GetReport").Inc()
 	// HTTP для Prometheus
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -46,7 +46,7 @@ func main() {
 	api.RegisterApiServer(s, a)
 
 	log.Println("gRPC server listening on :7777")
-	if err := s.Serve(lis); err != nil {
+	if err := s.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }

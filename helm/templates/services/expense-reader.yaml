@@ -16,39 +16,69 @@ spec:
         app.kubernetes.io/component: expense-reader
     spec:
       containers:
-      - name: expense-reader
-        imagePullPolicy: IfNotPresent
-        image: {{ .Values.services.expenseReaderImage }}
-        env:
-        - name: DB_HOST
-          value: {{ .Release.Name }}-postgres-replica
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_USER
-          value: {{ .Values.postgres.primary.user | quote }}
-        - name: DB_PASS
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-postgres-secrets
-              key: primary-password
-        - name: DB_NAME
-          value: {{ .Values.postgres.primary.database | quote }}
-        ports:
-        - containerPort: 7777
-        livenessProbe:
-          tcpSocket:
-            port: 7777
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          failureThreshold: 3
+        - name: expense-reader
+          imagePullPolicy: IfNotPresent
+          image: {{ .Values.services.expenseReaderImage }}
+          env:
+            - name: DB_HOST
+              value: {{ .Release.Name }}-postgres-replica
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_USER
+              value: {{ .Values.postgres.primary.user | quote }}
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgres-secrets
+                  key: primary-password
+            - name: DB_NAME
+              value: {{ .Values.postgres.primary.database | quote }}
+          ports:
+            - name: grpc
+              containerPort: 7777
+            - name: metrics
+              containerPort: 2113   # порт экспорта метрик
+          livenessProbe:
+            tcpSocket:
+              port: 7777
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Release.Name }}-expense-reader
+  labels:
+    app.kubernetes.io/component: expense-reader
 spec:
-  ports:
-  - port: 7777
-    targetPort: 7777
   selector:
     app.kubernetes.io/component: expense-reader
+  ports:
+    - name: grpc
+      port: 7777
+      targetPort: grpc
+    - name: metrics
+      port: 2113
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-expense-reader-sm
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: expense-reader
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: expense-reader
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+

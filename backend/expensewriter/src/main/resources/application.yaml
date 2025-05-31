@@ -16,3 +16,22 @@ spring:
 logging:
   level:
     org.jooq: DEBUG
+
+server:
+  port: 8080
+
+management:
+  server:
+    port: 2115
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+
+spring:
+  metrics:
+    tags:
+      application: expense-writer

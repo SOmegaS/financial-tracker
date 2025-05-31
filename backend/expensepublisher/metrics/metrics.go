@@ -35,5 +35,5 @@ func InitMetrics() {
 	prometheus.MustRegister(RequestsTotal, ErrorsTotal, RequestDuration)
 	RequestsTotal.WithLabelValues("CreateBill")
 	ErrorsTotal.WithLabelValues("CreateBill")
-	RequestDuration.WithLabelValues("CreateBill")
+	RequestDuration.WithLabelValues("CreateBill").Observe(0)
 }

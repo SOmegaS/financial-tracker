@@ -24,21 +24,9 @@ postgres:
     database: "db"
     storage: "1Gi"
 
-# prometheus:
-#   prometheusSpec:
-#     maximumStartupDurationSeconds: 120
-#   replicas: 1
-#   resources:
-#     limits:
-#       cpu: 1
-#       memory: 1Gi
-#     requests:
-#       cpu: 1
-#       memory: 1Gi
-
 services:
-  expenseReaderImage: "harbor.devops-teta.ru/financial-tracker/expensereader:arm"
-  expensePublisherImage: "harbor.devops-teta.ru/financial-tracker/expensepublisher:test2"
-  userServiceImage: "harbor.devops-teta.ru/financial-tracker/userservice:arm"
-  expenseWriterImage: "harbor.devops-teta.ru/financial-tracker/expensewriter:arm"
+  expenseReaderImage: "harbor.devops-teta.ru/financial-tracker/expensereader:test1"
+  expensePublisherImage: "harbor.devops-teta.ru/financial-tracker/expensepublisher:test3"
+  userServiceImage: "harbor.devops-teta.ru/financial-tracker/userservice:test"
+  expenseWriterImage: "harbor.devops-teta.ru/financial-tracker/expensewriter:test"
 
