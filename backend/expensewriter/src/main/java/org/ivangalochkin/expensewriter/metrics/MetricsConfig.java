@@ -3,9 +3,9 @@ package org.ivangalochkin.expensewriter.metrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
-@Configuration
+@Component
 public class MetricsConfig {
     public final Counter billsProcessedTotal;
     public final Counter billsFailedTotal;

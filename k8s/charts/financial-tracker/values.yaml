@@ -2,9 +2,6 @@ kafka:
   image: confluentinc/cp-kafka:latest
   storage: 1Gi
 
-loadTester:
-  image: harbor.devops-teta.ru/financial-tracker/load-tester:arm
-
 postgres:
   primary:
     user: "ivang"
@@ -21,7 +18,7 @@ postgres:
     storage: "1Gi"
 
 services:
-  expenseReaderImage: "harbor.devops-teta.ru/financial-tracker/expensereader:arm"
-  expensePublisherImage: "harbor.devops-teta.ru/financial-tracker/expensepublisher:arm"
-  userServiceImage: "harbor.devops-teta.ru/financial-tracker/userservice:arm"
-  expenseWriterImage: "harbor.devops-teta.ru/financial-tracker/expensewriter:arm"
+  expenseReaderImage: "shulepusik/expensereader:0.2.0"
+  expensePublisherImage: "shulepusik/expensepublisher:0.2.1"
+  userServiceImage: "shulepusik/userservice:0.2.0"
+  expenseWriterImage: "shulepusik/expensewriter:0.2.1"

@@ -18,13 +18,13 @@ docker buildx build \
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
   -t harbor.devops-teta.ru/financial-tracker/userservice:0.1.0 \
-  expensepublisher \
+  userservice \
   --push
 ```
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t harbor.devops-teta.ru/financial-tracker/expensepublisher:0.1.0 \
+  -t harbor.devops-teta.ru/financial-tracker/expensepublisher:0.2.0 \
   expensepublisher \
   --push
 ```

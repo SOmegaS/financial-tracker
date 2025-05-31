@@ -30,8 +30,10 @@ spec:
               name: {{ .Release.Name }}-jwt-secret
               key: public-key
         ports:
-        - containerPort: 7777
-        - containerPort: 2112
+          - name: grpc
+            containerPort: 7777
+          - name: metrics
+            containerPort: 2112
         livenessProbe:
           tcpSocket:
             port: 7777
@@ -42,9 +44,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-expense-publisher-service
+  name: {{ .Release.Name }}-expense-publisher
   labels:
-    app.kubernetes.io/component: expense-publisher-service
+    app.kubernetes.io/component: expense-publisher
 spec:
   ports:
   - name: service
@@ -62,12 +64,12 @@ metadata:
   name: {{ .Release.Name }}-sm
   namespace: monitoring
   labels:
-    app.kubernetes.io/component: expense-publisher-service   
-    serviceMonitorSelector: expense-publisher-service
+    app.kubernetes.io/component: expense-publisher
+    serviceMonitorSelector: expense-publisher
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/component: expense-publisher-service
+      app.kubernetes.io/component: expense-publisher
   namespaceSelector:
     matchNames:
       - default

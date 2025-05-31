@@ -9,7 +9,8 @@ prometheus:
         - key: app.kubernetes.io/component
           operator: In
           values:
-            - expense-publisher-service
+            - expense-writer
+            - expense-publisher
             - expense-reader
             - user-service
             - load-tester

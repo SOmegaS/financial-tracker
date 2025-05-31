@@ -10,9 +10,9 @@ import (
 	"math"
 	"os"
 	"strings"
-	
-	"time"
+
 	"expensepublisher/metrics"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -31,14 +31,17 @@ type App struct {
 
 func NewApp(kafkaHostPort, topicName string) (*App, error) {
 	pubKeyStr := os.Getenv("PUBLIC_KEY")
-    if pubKeyStr == "" {
-    	return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
-    }
-    publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
-    if err != nil {
-    	return nil, fmt.Errorf("failed to parse public key: %w", err)
-    }
+	if pubKeyStr == "" {
+		return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
 
+	log.Println(publicKey)
+	log.Println(topicName)
+	log.Println(kafkaHostPort)
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(kafkaHostPort),
 		Topic:        topicName,
@@ -72,6 +75,7 @@ func validateCreateBillMessage(msg *api.BillMessage) error {
 }
 
 func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Empty, error) {
+	log.Println("GOT MESSAGE CREATE BILL")
 	start := time.Now()
 	metrics.RequestsTotal.WithLabelValues("CreateBill").Inc()
 	defer metrics.RequestDuration.WithLabelValues("CreateBill").Observe(time.Since(start).Seconds())
@@ -81,17 +85,20 @@ func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Em
 	})
 	if err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
+		log.Println(err)
 		return nil, status.Errorf(codes.Unauthenticated, "parse token error: %v", err)
 	}
 
 	if token.Claims.Valid() != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
+		log.Println(err)
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
 	if err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
+		log.Println(err)
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
 
@@ -99,18 +106,21 @@ func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Em
 
 	if err := validateCreateBillMessage(msg); err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
+		log.Println(err)
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)
 	}
 
 	err = a.publishMessage(ctx, id, msg)
 	if err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
+		log.Println(err)
 		return nil, status.Errorf(codes.Internal, "internal error: %v", err)
 	}
 
 	return &emptypb.Empty{}, nil
 }
 func (a *App) publishMessage(ctx context.Context, userId uuid.UUID, msg *api.BillMessage) error {
+	log.Println(msg)
 	writeMessage := &api.CreateBillMessage{
 		Name:      msg.Name,
 		Amount:    msg.Amount,
@@ -120,6 +130,7 @@ func (a *App) publishMessage(ctx context.Context, userId uuid.UUID, msg *api.Bil
 	}
 	bytes, err := proto.Marshal(writeMessage)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	err = a.writer.WriteMessages(ctx, kafka.Message{
