@@ -13,7 +13,6 @@ prometheus:
             - expense-publisher
             - expense-reader
             - user-service
-            - load-tester
     maximumStartupDurationSeconds: 120
 
 grafana:

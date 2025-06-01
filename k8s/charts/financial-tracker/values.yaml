@@ -21,4 +21,4 @@ services:
   expenseReaderImage: "shulepusik/expensereader:0.2.0"
   expensePublisherImage: "shulepusik/expensepublisher:0.2.1"
   userServiceImage: "shulepusik/userservice:0.2.0"
-  expenseWriterImage: "shulepusik/expensewriter:0.2.1"
+  expenseWriterImage: "a4m1r04/expensewriter:0.2.2"
