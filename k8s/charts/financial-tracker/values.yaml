@@ -18,7 +18,7 @@ postgres:
     storage: "1Gi"
 
 services:
-  expenseReaderImage: "shulepusik/expensereader:0.2.0"
-  expensePublisherImage: "shulepusik/expensepublisher:0.2.1"
-  userServiceImage: "shulepusik/userservice:0.2.0"
-  expenseWriterImage: "a4m1r04/expensewriter:0.2.2"
+  expenseReaderImage: "a4m1r04/expensereader:0.2.1"
+  expensePublisherImage: "a4m1r04/expensepublisher:0.2.2"
+  userServiceImage: "a4m1r04/userservice:0.2.1"
+  expenseWriterImage: "a4m1r04/expensewriter:0.2.3"

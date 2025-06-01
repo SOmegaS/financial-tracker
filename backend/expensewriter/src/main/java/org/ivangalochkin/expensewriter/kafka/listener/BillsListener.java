@@ -21,9 +21,15 @@ public class BillsListener {
             containerFactory = "createBillListenerContainerFactory"
     )
     public void consume(List<CreateBillProto.CreateBill> messages) {
-        log.info("Received {} messages {}", messages.size(), Thread.currentThread().getName());
-        log.info(messages.getFirst().toString());
-        billService.batchCreateBills(messages);
-        log.info("Batch complete");
+        log.info("Received {} messages on thread {}", messages.size(), Thread.currentThread().getName());
+        if (!messages.isEmpty()) {
+            log.debug("First message content: {}", messages.get(0).toString());
+        }
+        try {
+            billService.batchCreateBills(messages);
+            log.info("Batch complete");
+        } catch (Exception e) {
+            log.error("Error processing batch of {} messages", messages.size(), e);
+        }
     }
 }

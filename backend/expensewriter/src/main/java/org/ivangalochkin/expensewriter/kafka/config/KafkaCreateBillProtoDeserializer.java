@@ -6,12 +6,14 @@ import lombok.NoArgsConstructor;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.ivangalochkin.expensewriter.proto.CreateBillProto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 @NoArgsConstructor(force = true)
 public class KafkaCreateBillProtoDeserializer implements Deserializer<CreateBillProto.CreateBill> {
-
+    private static final Logger log = LoggerFactory.getLogger(KafkaCreateBillProtoDeserializer.class);
     private final Parser<CreateBillProto.CreateBill> parser = CreateBillProto.CreateBill.parser();
 
     @Override
@@ -24,7 +26,13 @@ public class KafkaCreateBillProtoDeserializer implements Deserializer<CreateBill
         try {
             return parser.parseFrom(data);
         } catch (InvalidProtocolBufferException e) {
-            throw new SerializationException();
+            log.error("Failed to deserialize message from topic {}", topic, e);
+            throw new SerializationException("Error deserializing CreateBillProto.CreateBill", e);
         }
+    }
+
+    @Override
+    public void close() {
+        Deserializer.super.close();
     }
 }

@@ -4,45 +4,55 @@ import (
 	"expensepublisher/internal/app"
 	"expensepublisher/metrics"
 	"expensepublisher/pkg/api"
-	"log"
 	"net"
 	"net/http"
 	"os"
 
-	"google.golang.org/grpc"
+	"go.uber.org/zap"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
 	kafkaHostPort := os.Getenv("KAFKA_HOST_PORT")
 	topicName := os.Getenv("TOPIC_NAME")
 
 	metrics.InitMetrics()
 	metrics.RequestsTotal.WithLabelValues("CreateBill").Inc()
-	a, err := app.NewApp(kafkaHostPort, topicName)
+
+	a, err := app.NewApp(sugar, kafkaHostPort, topicName)
 	if err != nil {
-		log.Fatal(err)
+		sugar.Fatalw("failed to create app", "error", err)
 	}
 
 	// HTTP server for Prometheus metrics
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Println("Метрики Prometheus доступны по адресу :2112/metrics")
-		log.Fatal(http.ListenAndServe(":2112", nil))
+		sugar.Infow("Метрики Prometheus доступны по адресу", "address", ":2112/metrics")
+		if err := http.ListenAndServe(":2112", nil); err != nil {
+			sugar.Fatalw("metrics server failed", "error", err)
+		}
 	}()
 
 	listener, err := net.Listen("tcp", ":7777")
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		sugar.Fatalw("failed to listen", "error", err)
 	}
 	defer listener.Close()
 
 	s := grpc.NewServer()
 	api.RegisterApiServer(s, a)
 
-	log.Println("Приложение запущено")
+	sugar.Infow("Приложение запущено", "port", 7777)
 
 	if err := s.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		sugar.Fatalw("failed to serve", "error", err)
 	}
 }

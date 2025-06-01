@@ -12,12 +12,14 @@ public class ProtoToJooqMapper {
         BillsRecord billsRecord = new BillsRecord();
         billsRecord.setAmount(createBill.getAmount());
         billsRecord.setCategory(createBill.getCategory());
-        billsRecord.setTmstmp(Instant
-                .ofEpochSecond(
+        billsRecord.setTmstmp(
+                Instant.ofEpochSecond(
                         createBill.getTimestamp().getSeconds(),
                         createBill.getTimestamp().getNanos()
                 )
-                .atZone(ZoneId.systemDefault()).toLocalDateTime());
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+        );
         billsRecord.setName(createBill.getName());
         billsRecord.setUserId(UUID.fromString(createBill.getUserId()));
         return billsRecord;

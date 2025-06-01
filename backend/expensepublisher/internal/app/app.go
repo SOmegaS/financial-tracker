@@ -6,14 +6,12 @@ import (
 	"errors"
 	"expensepublisher/pkg/api"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"strings"
-
-	"expensepublisher/metrics"
 	"time"
 
+	"go.uber.org/zap"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -21,27 +19,31 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"expensepublisher/metrics"
 )
 
 type App struct {
 	api.UnimplementedApiServer
 	writer    *kafka.Writer
 	publicKey *rsa.PublicKey
+	logger    *zap.SugaredLogger
 }
 
-func NewApp(kafkaHostPort, topicName string) (*App, error) {
+func NewApp(logger *zap.SugaredLogger, kafkaHostPort, topicName string) (*App, error) {
 	pubKeyStr := os.Getenv("PUBLIC_KEY")
 	if pubKeyStr == "" {
+		logger.Error("PUBLIC_KEY environment variable is not set")
 		return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
 	}
 	publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
 	if err != nil {
+		logger.Errorw("failed to parse public key", "error", err)
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 
-	log.Println(publicKey)
-	log.Println(topicName)
-	log.Println(kafkaHostPort)
+	logger.Info(publicKey)
+	logger.Info(topicName)
+	logger.Info(kafkaHostPort)
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(kafkaHostPort),
 		Topic:        topicName,
@@ -52,6 +54,7 @@ func NewApp(kafkaHostPort, topicName string) (*App, error) {
 	return &App{
 		writer:    w,
 		publicKey: publicKey,
+		logger:    logger,
 	}, nil
 }
 
@@ -75,7 +78,7 @@ func validateCreateBillMessage(msg *api.BillMessage) error {
 }
 
 func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Empty, error) {
-	log.Println("GOT MESSAGE CREATE BILL")
+	a.logger.Info("GOT MESSAGE CREATE BILL")
 	start := time.Now()
 	metrics.RequestsTotal.WithLabelValues("CreateBill").Inc()
 	defer metrics.RequestDuration.WithLabelValues("CreateBill").Observe(time.Since(start).Seconds())
@@ -85,42 +88,44 @@ func (a *App) CreateBill(ctx context.Context, msg *api.BillMessage) (*emptypb.Em
 	})
 	if err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
-		log.Println(err)
+		a.logger.Errorw("token parse error", "error", err)
 		return nil, status.Errorf(codes.Unauthenticated, "parse token error: %v", err)
 	}
 
 	if token.Claims.Valid() != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
-		log.Println(err)
+		a.logger.Errorw("token invalid", "error", err)
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
 	if err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
-		log.Println(err)
+		a.logger.Errorw("invalid uuid", "error", err)
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
 
-	log.Printf("Принят rpc запрос от пользователя с id = %v", id)
+	a.logger.Infow("Принят rpc запрос от пользователя", "userID", id)
 
 	if err := validateCreateBillMessage(msg); err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
-		log.Println(err)
+		a.logger.Errorw("validation error", "error", err)
 		return nil, status.Errorf(codes.InvalidArgument, "validation error: %v", err)
 	}
 
 	err = a.publishMessage(ctx, id, msg)
 	if err != nil {
 		metrics.ErrorsTotal.WithLabelValues("CreateBill").Inc()
-		log.Println(err)
+		a.logger.Errorw("failed to publish message", "error", err)
 		return nil, status.Errorf(codes.Internal, "internal error: %v", err)
 	}
 
+	a.logger.Infow("Successfully published CreateBill message", "userID", id)
 	return &emptypb.Empty{}, nil
 }
+
 func (a *App) publishMessage(ctx context.Context, userId uuid.UUID, msg *api.BillMessage) error {
-	log.Println(msg)
+	a.logger.Info(msg)
 	writeMessage := &api.CreateBillMessage{
 		Name:      msg.Name,
 		Amount:    msg.Amount,
@@ -130,11 +135,14 @@ func (a *App) publishMessage(ctx context.Context, userId uuid.UUID, msg *api.Bil
 	}
 	bytes, err := proto.Marshal(writeMessage)
 	if err != nil {
-		log.Println(err)
+		a.logger.Errorw("failed to marshal message", "error", err)
 		return err
 	}
 	err = a.writer.WriteMessages(ctx, kafka.Message{
 		Value: bytes,
 	})
+	if err != nil {
+		a.logger.Errorw("failed to write to kafka", "error", err)
+	}
 	return err
 }

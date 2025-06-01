@@ -1,20 +1,27 @@
-// main.go
 package main
 
 import (
-	"log"
 	"net"
 	"net/http"
 	"os"
+
 	"user-service/internal/app"
 	"user-service/metrics"
 	"user-service/pkg/api"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
 	// Get env vars
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASS")
@@ -26,25 +33,27 @@ func main() {
 	metrics.Init()
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		log.Println("Metrics endpoint listening on :2114/metrics")
-		log.Fatal(http.ListenAndServe(":2114", nil))
+		sugar.Infow("Metrics endpoint listening on :2114/metrics")
+		if err := http.ListenAndServe(":2114", nil); err != nil {
+			sugar.Fatalw("metrics server failed", "error", err)
+		}
 	}()
 
 	// Create app
-	a, err := app.NewApp(dbName, dbUser, dbHost, dbPort, dbPass)
+	a, err := app.NewApp(sugar, dbName, dbUser, dbHost, dbPort, dbPass)
 	if err != nil {
-		log.Fatal(err)
+		sugar.Fatalw("failed to create app", "error", err)
 	}
 
 	// Инициализация приложения
 	if err := a.Init(); err != nil {
-		log.Fatalf("failed to initialize app: %v", err)
+		sugar.Fatalw("failed to initialize app", "error", err)
 	}
 
 	// Инициализация gRPC сервера
 	listener, err := net.Listen("tcp", ":7777")
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		sugar.Fatalw("failed to listen", "error", err)
 	}
 	defer listener.Close()
 
@@ -52,8 +61,8 @@ func main() {
 	api.RegisterApiServer(s, a)
 
 	// Запуск сервера
-	log.Println("User service started on :7777")
+	sugar.Infow("User service started on :7777")
 	if err := s.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		sugar.Fatalw("failed to serve", "error", err)
 	}
 }

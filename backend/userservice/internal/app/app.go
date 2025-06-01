@@ -5,10 +5,10 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
+	"go.uber.org/zap"
 	"user-service/internal/database"
 	"user-service/metrics"
 	"user-service/pkg/api"
@@ -29,10 +29,11 @@ type App struct {
 	queries    *database.Queries
 	publicKey  *rsa.PublicKey
 	privateKey *rsa.PrivateKey
+	logger     *zap.SugaredLogger
 }
 
 // NewApp инициализирует подключение к базе данных
-func NewApp(dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
+func NewApp(logger *zap.SugaredLogger, dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
 	db, err := database.Open(dbName, dbUser, dbHost, dbPort, dbPass)
 	if err != nil {
 		return nil, err
@@ -40,6 +41,7 @@ func NewApp(dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
 	return &App{
 		db:     db,
 		dbName: dbName,
+		logger: logger,
 	}, nil
 }
 
@@ -50,30 +52,30 @@ func (a *App) Init() error {
 		return err
 	}
 	if isChanged {
-		log.Println("Migrations applied")
+		a.logger.Infow("Migrations applied")
 	}
 	a.queries = database.New(a.db)
 
 	privKeyStr := os.Getenv("PRIVATE_KEY")
-    if privKeyStr == "" {
-    	return fmt.Errorf("PRIVATE_KEY environment variable is not set")
-    }
-    privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyStr))
-    	if err != nil {
-    		return fmt.Errorf("failed to parse private key: %w", err)
-    }
-    a.privateKey = privateKey
+	if privKeyStr == "" {
+		return fmt.Errorf("PRIVATE_KEY environment variable is not set")
+	}
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyStr))
+	if err != nil {
+		return fmt.Errorf("failed to parse private key: %w", err)
+	}
+	a.privateKey = privateKey
 
     // Загрузка публичного ключа из переменной окружения
-    pubKeyStr := os.Getenv("PUBLIC_KEY")
-    if pubKeyStr == "" {
-    	return fmt.Errorf("PUBLIC_KEY environment variable is not set")
-    }
-    publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
-    if err != nil {
-    	return fmt.Errorf("failed to parse public key: %w", err)
-    }
-    a.publicKey = publicKey
+	pubKeyStr := os.Getenv("PUBLIC_KEY")
+	if pubKeyStr == "" {
+		return fmt.Errorf("PUBLIC_KEY environment variable is not set")
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
+	if err != nil {
+		return fmt.Errorf("failed to parse public key: %w", err)
+	}
+	a.publicKey = publicKey
 
 	return nil
 }
@@ -104,12 +106,14 @@ func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.Regi
 	passHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("failed to hash password", "error", err)
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %v", err)
 	}
 
 	userId, err := uuid.NewUUID()
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("failed to generate UUID", "error", err)
 		return nil, status.Errorf(codes.Internal, "failed to generate UUID")
 	}
 
@@ -120,12 +124,14 @@ func (a *App) Register(ctx context.Context, req *api.RegisterRequest) (*api.Regi
 	})
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("failed to create user", "error", err)
 		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
 	}
 
 	jwtToken, err := a.CreateSession(req.RequestId, userId.String())
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("failed to create session", "error", err)
 		return nil, status.Errorf(codes.Internal, "failed to create session: %v", err)
 	}
 
@@ -144,6 +150,7 @@ func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginRespo
 	userInfo, err := a.queries.GetUserIdPassword(ctx, req.GetUsername())
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("user not found", "error", err)
 		return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
 	}
 
@@ -152,12 +159,14 @@ func (a *App) Login(ctx context.Context, req *api.LoginRequest) (*api.LoginRespo
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid credentials")
 		}
+		a.logger.Errorw("password comparison failed", "error", err)
 		return nil, status.Errorf(codes.Internal, "password comparison failed: %v", err)
 	}
 
 	jwtToken, err := a.CreateSession(req.RequestId, userInfo.ID.String())
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("failed to create session", "error", err)
 		return nil, status.Errorf(codes.Internal, "failed to create session: %v", err)
 	}
 

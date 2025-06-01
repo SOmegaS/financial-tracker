@@ -5,20 +5,18 @@ import (
 	"crypto/rsa"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
+	"go.uber.org/zap"
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"expensereader/internal/database"
 	"expensereader/metrics"
 	"expensereader/pkg/api"
-
-	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
 	_ "github.com/lib/pq"
 )
 
@@ -27,28 +25,34 @@ type App struct {
 	db         *database.Queries
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
+	logger     *zap.SugaredLogger
 }
 
 // NewApp создает экземпляр приложения expensereader
-func NewApp(dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
+func NewApp(logger *zap.SugaredLogger, dbName, dbUser, dbHost, dbPort, dbPass string) (*App, error) {
 	pubKeyStr := os.Getenv("PUBLIC_KEY")
-    if pubKeyStr == "" {
-    	return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
-    }
-    publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
-    if err != nil {
-    	return nil, fmt.Errorf("failed to parse public key: %w", err)
-    }
+	if pubKeyStr == "" {
+		logger.Error("PUBLIC_KEY environment variable is not set")
+		return nil, fmt.Errorf("PUBLIC_KEY environment variable is not set")
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(pubKeyStr))
+	if err != nil {
+		logger.Errorw("failed to parse public key", "error", err)
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
 
 	connStr := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?&sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
 	dbConn, err := sql.Open("postgres", connStr)
 	if err != nil {
+		logger.Errorw("failed to open database connection", "error", err)
 		return nil, err
 	}
 	db := database.New(dbConn)
+
 	return &App{
 		db:        db,
 		publicKey: publicKey,
+		logger:    logger,
 	}, nil
 }
 
@@ -64,24 +68,28 @@ func (a *App) GetReport(ctx context.Context, req *api.GetReportRequest) (*api.Ge
 	})
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("parse token error", "error", err)
 		return nil, status.Errorf(codes.Unauthenticated, "parse token error: %v", err)
 	}
 
 	if token.Claims.Valid() != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("token is invalid", "error", err)
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("invalid uuid", "error", err)
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
-	log.Printf("Принят rpc запрос от пользоваля с user_id = %v", id)
+	a.logger.Infow("Принят rpc запрос от пользоваля", "user_id", id)
 
 	r, err := a.db.GetReport(ctx, id)
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("get report error", "error", err)
 		return nil, status.Errorf(codes.Internal, "get report error: %v", err)
 	}
 
@@ -105,21 +113,26 @@ func (a *App) GetBills(ctx context.Context, req *api.GetBillsRequest) (*api.GetB
 	})
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("parse token error", "error", err)
 		return nil, status.Errorf(codes.Internal, "parse token error: %v", err)
 	}
 	if token.Claims.Valid() != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("token is invalid", "error", err)
 		return nil, status.Errorf(codes.Unauthenticated, "token is invalid: %v", err)
 	}
 
 	id, err := uuid.Parse(token.Claims.(jwt.MapClaims)["user_id"].(string))
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("invalid uuid", "error", err)
 		return nil, status.Errorf(codes.InvalidArgument, "invalid uuid")
 	}
+
 	bills, err := a.db.GetBills(ctx, database.GetBillsParams{UserID: id, Category: req.Category})
 	if err != nil {
 		metrics.GRPCErrorsTotal.WithLabelValues(method).Inc()
+		a.logger.Errorw("get bills error", "error", err)
 		return nil, status.Errorf(codes.Internal, "get bills error: %v", err)
 	}
 
