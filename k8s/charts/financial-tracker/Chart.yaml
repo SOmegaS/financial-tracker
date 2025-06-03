@@ -3,3 +3,8 @@ name: financial-tracker
 description: Helm chart for financial tracker services
 version: 0.1.0
 appVersion: "1.0"
+dependencies:
+- name: prometheus
+  version: "27.20.0"
+  repository: https://prometheus-community.github.io/helm-charts
+  condition: prometheus.enabled
