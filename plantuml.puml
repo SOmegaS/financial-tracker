@@ -1,7 +1,6 @@
 @startuml
 actor UI
-participant Envoy
-participant Traefik
+participant "k8s Envoy Gateway"
 participant "ExpenseReader(Go)"
 participant "ExpensePublisher(Go)"
 queue Kafka
@@ -12,44 +11,36 @@ database "postgres-replica"
 database "postgres-users"
 == Register ==
 autonumber 1
-UI -> Envoy: Register (username, password)
-Envoy -> Traefik
-Traefik -> "UserService(Go)"
+UI -> "k8s Envoy Gateway": Register (username, password)
+"k8s Envoy Gateway" -> "UserService(Go)"
 "UserService(Go)" -> "postgres-users": Insert (username, password_hash, userId)
-"UserService(Go)" -> Traefik: JWT
-Traefik -> Envoy
-Envoy -> UI
+"UserService(Go)" -> "k8s Envoy Gateway": JWT
+"k8s Envoy Gateway" -> UI
 == Login ==
 autonumber 1
-UI -> Envoy: Login (username, password)
-Envoy -> Traefik
-Traefik -> "UserService(Go)"
+UI -> "k8s Envoy Gateway": Login (username, password)
+"k8s Envoy Gateway" -> "UserService(Go)"
 "UserService(Go)" -> "postgres-users": Select (password, user_id)
-"UserService(Go)" -> Traefik: JWT
-Traefik -> Envoy
-Envoy -> UI
+"UserService(Go)" -> "k8s Envoy Gateway": JWT
+"k8s Envoy Gateway" -> UI
 autonumber 1
 == CreateExpense - создание траты ==
-UI -> Envoy: CreateExpense (amount, category, jwt, name, timestamp)
-Envoy -> Traefik
-Traefik -> "ExpensePublisher(Go)"
+UI -> "k8s Envoy Gateway": CreateExpense (amount, category, jwt, name, timestamp)
+"k8s Envoy Gateway" -> "ExpensePublisher(Go)"
 "ExpensePublisher(Go)" -> Kafka: writeExpense
 autonumber stop
 "ExpenseWriter(Java)" -> Kafka: Read data
 "ExpenseWriter(Java)" -> "postgres-primary": Insert (id, amount, category, timestamp)
 autonumber resume
-"ExpensePublisher(Go)" -> Traefik: "created"
-Traefik -> Envoy
-Envoy -> UI
+"ExpensePublisher(Go)" -> "k8s Envoy Gateway"
+"k8s Envoy Gateway" -> UI
 autonumber 1
 == Read - чтение трат (2 типа) ==
-UI -> Envoy: Read (jwt)
-Envoy -> Traefik
-Traefik -> "ExpenseReader(Go)"
+UI -> "k8s Envoy Gateway": Read (jwt)
+"k8s Envoy Gateway" -> "ExpenseReader(Go)"
 "ExpenseReader(Go)" -> "postgres-replica": Select
-"ExpenseReader(Go)" -> Traefik:
-Traefik -> Envoy
-Envoy -> UI
+"ExpenseReader(Go)" -> "k8s Envoy Gateway"
+"k8s Envoy Gateway" -> UI
 autonumber stop
 "postgres-replica" <-> "postgres-primary": Replicate
 @enduml
