@@ -13,4 +13,11 @@ spec:
           - name: load-tester
             image: {{ .Values.loadTester.image }}
             imagePullPolicy: IfNotPresent
+            env:
+            - name: USER_SERVICE_ADDR
+              value: {{ .Release.Name }}-user-service:7777
+            - name: PUBLISHER_ADDR
+              value: {{ .Release.Name }}-expense-publisher:7777
+            - name: READER_ADDR
+              value: {{ .Release.Name }}-expense-reader:7777
           restartPolicy: Never

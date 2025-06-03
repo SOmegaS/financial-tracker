@@ -2,6 +2,9 @@ kafka:
   image: confluentinc/cp-kafka:latest
   storage: 1Gi
 
+loadTester:
+  image: harbor.devops-teta.ru/financial-tracker/load-tester:arm
+  
 postgres:
   primary:
     user: "ivang"

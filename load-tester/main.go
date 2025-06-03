@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -18,12 +19,24 @@ import (
 )
 
 const (
-	userServiceAddr   = "financial-tracker-user-service:7777"      // Address for Register and Login
-	publisherAddr     = "financial-tracker-expense-publisher:7777" // Address for CreateBill
-	readerAddr        = "financial-tracker-expense-reader:7777"    // Address for GetReport and GetBills
-	numUsers          = 100                                        // Number of simulated users
-	operationsPerUser = 10                                         // Number of operations per user
+	numUsers          = 100 // Number of simulated users
+	operationsPerUser = 10  // Number of operations per user
 )
+
+// Get service addresses from environment variables
+var (
+	userServiceAddr = getEnvOrDefault("USER_SERVICE_ADDR", "financial-tracker-user-service:7777")
+	publisherAddr   = getEnvOrDefault("PUBLISHER_ADDR", "financial-tracker-expense-publisher:7777")
+	readerAddr      = getEnvOrDefault("READER_ADDR", "financial-tracker-expense-reader:7777")
+)
+
+// getEnvOrDefault returns the value of the environment variable or a default value if not set
+func getEnvOrDefault(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
 
 // endpointMetrics tracks per-endpoint performance
 type endpointMetrics struct {
